@@ -1,0 +1,48 @@
+# Local deployment. One API container; analysis output and model weights are
+# bind-mounted so results survive the container and the checkpoints are not baked
+# into an image layer.
+#
+#     docker compose up --build
+#     curl http://localhost:8000/api/health
+#
+# Model weights must be present before the first analysis, or the run fails at
+# startup with a FileNotFoundError naming every path tried. Fetch them per
+# backend/models/README.md.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Checkpoints, read-only: the container loads them, never writes them.
+      - ./backend/models:/app/backend/models:ro
+      # Generated output. Split so results and incoming uploads can be cleared
+      # independently; both are disposable.
+      - ./data/runs:/app/data/runs
+      - ./data/uploads:/app/data/uploads
+    environment:
+      CRICKET_LOG_LEVEL: INFO
+      # GPU passthrough. On a CPU-only host, delete the `deploy` block below and
+      # expect a much slower run rather than a broken one: app/shot_classification
+      # and ultralytics both fall back to CPU when CUDA is unavailable.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4).status==200 else 1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s

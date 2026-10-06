@@ -1,0 +1,37 @@
+# Runtime dependencies for the Cricket Video Analysis backend.
+#
+# These are the modules the code actually imports. The previous manifest
+# (CricketTracker-main/backend/requirements.txt, now removed) listed `filterpy`
+# and `scipy`, which nothing imports — the Kalman filter is implemented in
+# app/tracking/kalman_tracker.py and the smoother is pure numpy in
+# app/analytics/trajectory.py — and it omitted `python-multipart`, without which
+# FastAPI rejects every upload at startup.
+#
+# Install with:
+#     pip install -r requirements.txt
+#
+# torch/torchvision: the pinned builds below are the CUDA 12.1 wheels this
+# project was verified against. For CPU-only, install from the PyTorch CPU index
+# first and drop the version pins:
+#     pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
+
+# ── Web layer ─────────────────────────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.20   # required by fastapi.File()/UploadFile
+
+# ── Vision and maths ──────────────────────────────────────────────────────────
+numpy==2.1.3
+opencv-python==4.10.0.84
+
+# ── Detection and shot classification ─────────────────────────────────────────
+# ultralytics provides YOLO11 (`ultralytics.YOLO`).
+ultralytics==8.4.162
+torch==2.5.1
+torchvision==0.20.1
+
+# ── Development and verification ──────────────────────────────────────────────
+# httpx backs starlette's TestClient, which the integration tests drive the API
+# through. It is a test dependency, not a runtime one.
+pytest==9.1.1
+httpx==0.28.1

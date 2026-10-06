@@ -1,0 +1,4904 @@
+{
+  "pipeline": "Cricket Match Pipeline",
+  "version": "1.0",
+  "video_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\matches\\long_match.mp4",
+  "clips_directory": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips",
+  "total_deliveries": 41,
+  "completed": 41,
+  "errors": 0,
+  "tracking_success": 36,
+  "tracking_failures": 5,
+  "results": [
+    {
+      "delivery": null,
+      "clip": "delivery_001.mp4",
+      "shot": {
+        "prediction": "Square Cut",
+        "confidence": 0.289789,
+        "class_probabilities": {
+          "Cover": 0.159579,
+          "Defense": 0.05052,
+          "Flick": 0.14619,
+          "Hook": 0.060666,
+          "Late Cut": 0.062782,
+          "Lofted": 0.050909,
+          "Pull": 0.046392,
+          "Square Cut": 0.289789,
+          "Straight": 0.068824,
+          "Sweep": 0.064349
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 8,
+        "trajectory": [
+          {
+            "frame": 3,
+            "x": 368,
+            "y": 181
+          },
+          {
+            "frame": 4,
+            "x": 369,
+            "y": 190
+          },
+          {
+            "frame": 5,
+            "x": 371,
+            "y": 195
+          },
+          {
+            "frame": 6,
+            "x": 384,
+            "y": 223
+          },
+          {
+            "frame": 7,
+            "x": 391,
+            "y": 238
+          },
+          {
+            "frame": 8,
+            "x": 382,
+            "y": 237
+          },
+          {
+            "frame": 9,
+            "x": 368,
+            "y": 226
+          },
+          {
+            "frame": 10,
+            "x": 363,
+            "y": 219
+          },
+          {
+            "frame": 11,
+            "x": 365,
+            "y": 220
+          },
+          {
+            "frame": 12,
+            "x": 366,
+            "y": 221
+          },
+          {
+            "frame": 13,
+            "x": 379,
+            "y": 240
+          },
+          {
+            "frame": 14,
+            "x": 386,
+            "y": 250
+          },
+          {
+            "frame": 15,
+            "x": 393,
+            "y": 261
+          },
+          {
+            "frame": 16,
+            "x": 400,
+            "y": 271
+          },
+          {
+            "frame": 17,
+            "x": 407,
+            "y": 282
+          },
+          {
+            "frame": 18,
+            "x": 414,
+            "y": 292
+          },
+          {
+            "frame": 19,
+            "x": 421,
+            "y": 303
+          },
+          {
+            "frame": 20,
+            "x": 427,
+            "y": 313
+          },
+          {
+            "frame": 21,
+            "x": 434,
+            "y": 324
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_001.mp4",
+      "clip_name": "delivery_001.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 8,
+        "trajectory_points": 19
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_002.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.211519,
+        "class_probabilities": {
+          "Cover": 0.052153,
+          "Defense": 0.126124,
+          "Flick": 0.132942,
+          "Hook": 0.058531,
+          "Late Cut": 0.211519,
+          "Lofted": 0.082924,
+          "Pull": 0.118132,
+          "Square Cut": 0.087673,
+          "Straight": 0.082842,
+          "Sweep": 0.047161
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 13,
+        "trajectory": [
+          {
+            "frame": 3,
+            "x": 305,
+            "y": 218
+          },
+          {
+            "frame": 4,
+            "x": 302,
+            "y": 207
+          },
+          {
+            "frame": 5,
+            "x": 297,
+            "y": 190
+          },
+          {
+            "frame": 6,
+            "x": 291,
+            "y": 172
+          },
+          {
+            "frame": 7,
+            "x": 285,
+            "y": 156
+          },
+          {
+            "frame": 8,
+            "x": 279,
+            "y": 144
+          },
+          {
+            "frame": 9,
+            "x": 302,
+            "y": 185
+          },
+          {
+            "frame": 10,
+            "x": 319,
+            "y": 229
+          },
+          {
+            "frame": 11,
+            "x": 328,
+            "y": 251
+          },
+          {
+            "frame": 12,
+            "x": 337,
+            "y": 272
+          },
+          {
+            "frame": 13,
+            "x": 331,
+            "y": 282
+          },
+          {
+            "frame": 14,
+            "x": 322,
+            "y": 279
+          },
+          {
+            "frame": 15,
+            "x": 317,
+            "y": 276
+          },
+          {
+            "frame": 16,
+            "x": 312,
+            "y": 274
+          },
+          {
+            "frame": 17,
+            "x": 313,
+            "y": 271
+          },
+          {
+            "frame": 18,
+            "x": 314,
+            "y": 269
+          },
+          {
+            "frame": 19,
+            "x": 315,
+            "y": 268
+          },
+          {
+            "frame": 20,
+            "x": 316,
+            "y": 266
+          },
+          {
+            "frame": 21,
+            "x": 317,
+            "y": 265
+          },
+          {
+            "frame": 22,
+            "x": 318,
+            "y": 263
+          },
+          {
+            "frame": 23,
+            "x": 318,
+            "y": 261
+          },
+          {
+            "frame": 24,
+            "x": 319,
+            "y": 260
+          },
+          {
+            "frame": 25,
+            "x": 320,
+            "y": 258
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_002.mp4",
+      "clip_name": "delivery_002.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 13,
+        "trajectory_points": 23
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_003.mp4",
+      "shot": {
+        "prediction": "Lofted",
+        "confidence": 0.343465,
+        "class_probabilities": {
+          "Cover": 0.056968,
+          "Defense": 0.073831,
+          "Flick": 0.077316,
+          "Hook": 0.054973,
+          "Late Cut": 0.098776,
+          "Lofted": 0.343465,
+          "Pull": 0.077109,
+          "Square Cut": 0.074996,
+          "Straight": 0.081413,
+          "Sweep": 0.061154
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 7,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 280,
+            "y": 183
+          },
+          {
+            "frame": 2,
+            "x": 275,
+            "y": 192
+          },
+          {
+            "frame": 3,
+            "x": 267,
+            "y": 210
+          },
+          {
+            "frame": 4,
+            "x": 259,
+            "y": 216
+          },
+          {
+            "frame": 5,
+            "x": 250,
+            "y": 202
+          },
+          {
+            "frame": 6,
+            "x": 224,
+            "y": 165
+          },
+          {
+            "frame": 7,
+            "x": 186,
+            "y": 117
+          },
+          {
+            "frame": 8,
+            "x": 167,
+            "y": 93
+          },
+          {
+            "frame": 9,
+            "x": 147,
+            "y": 69
+          },
+          {
+            "frame": 10,
+            "x": 128,
+            "y": 44
+          },
+          {
+            "frame": 11,
+            "x": 108,
+            "y": 20
+          },
+          {
+            "frame": 12,
+            "x": 89,
+            "y": -3
+          },
+          {
+            "frame": 13,
+            "x": 69,
+            "y": -28
+          },
+          {
+            "frame": 14,
+            "x": 50,
+            "y": -52
+          },
+          {
+            "frame": 15,
+            "x": 30,
+            "y": -77
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_003.mp4",
+      "clip_name": "delivery_003.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 7,
+        "trajectory_points": 15
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_004.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.406156,
+        "class_probabilities": {
+          "Cover": 0.04861,
+          "Defense": 0.081278,
+          "Flick": 0.052974,
+          "Hook": 0.065717,
+          "Late Cut": 0.406156,
+          "Lofted": 0.07719,
+          "Pull": 0.052338,
+          "Square Cut": 0.070811,
+          "Straight": 0.101625,
+          "Sweep": 0.043302
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 9,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 326,
+            "y": 185
+          },
+          {
+            "frame": 2,
+            "x": 322,
+            "y": 199
+          },
+          {
+            "frame": 3,
+            "x": 320,
+            "y": 207
+          },
+          {
+            "frame": 4,
+            "x": 313,
+            "y": 219
+          },
+          {
+            "frame": 5,
+            "x": 305,
+            "y": 210
+          },
+          {
+            "frame": 6,
+            "x": 298,
+            "y": 190
+          },
+          {
+            "frame": 7,
+            "x": 291,
+            "y": 169
+          },
+          {
+            "frame": 8,
+            "x": 284,
+            "y": 153
+          },
+          {
+            "frame": 9,
+            "x": 277,
+            "y": 140
+          },
+          {
+            "frame": 10,
+            "x": 270,
+            "y": 127
+          },
+          {
+            "frame": 11,
+            "x": 267,
+            "y": 121
+          },
+          {
+            "frame": 12,
+            "x": 264,
+            "y": 115
+          },
+          {
+            "frame": 13,
+            "x": 260,
+            "y": 109
+          },
+          {
+            "frame": 14,
+            "x": 257,
+            "y": 102
+          },
+          {
+            "frame": 15,
+            "x": 254,
+            "y": 96
+          },
+          {
+            "frame": 16,
+            "x": 250,
+            "y": 90
+          },
+          {
+            "frame": 17,
+            "x": 247,
+            "y": 83
+          },
+          {
+            "frame": 18,
+            "x": 244,
+            "y": 77
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_004.mp4",
+      "clip_name": "delivery_004.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 9,
+        "trajectory_points": 18
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_005.mp4",
+      "shot": {
+        "prediction": "Sweep",
+        "confidence": 0.20315,
+        "class_probabilities": {
+          "Cover": 0.073533,
+          "Defense": 0.068793,
+          "Flick": 0.122739,
+          "Hook": 0.064975,
+          "Late Cut": 0.074142,
+          "Lofted": 0.134748,
+          "Pull": 0.076035,
+          "Square Cut": 0.08194,
+          "Straight": 0.099944,
+          "Sweep": 0.20315
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 8,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 305,
+            "y": 160
+          },
+          {
+            "frame": 2,
+            "x": 306,
+            "y": 165
+          },
+          {
+            "frame": 3,
+            "x": 310,
+            "y": 177
+          },
+          {
+            "frame": 4,
+            "x": 313,
+            "y": 191
+          },
+          {
+            "frame": 5,
+            "x": 316,
+            "y": 208
+          },
+          {
+            "frame": 6,
+            "x": 319,
+            "y": 225
+          },
+          {
+            "frame": 7,
+            "x": 323,
+            "y": 230
+          },
+          {
+            "frame": 8,
+            "x": 329,
+            "y": 218
+          },
+          {
+            "frame": 9,
+            "x": 332,
+            "y": 211
+          },
+          {
+            "frame": 10,
+            "x": 334,
+            "y": 204
+          },
+          {
+            "frame": 11,
+            "x": 337,
+            "y": 198
+          },
+          {
+            "frame": 12,
+            "x": 340,
+            "y": 191
+          },
+          {
+            "frame": 13,
+            "x": 343,
+            "y": 184
+          },
+          {
+            "frame": 14,
+            "x": 346,
+            "y": 177
+          },
+          {
+            "frame": 15,
+            "x": 349,
+            "y": 170
+          },
+          {
+            "frame": 16,
+            "x": 351,
+            "y": 163
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_005.mp4",
+      "clip_name": "delivery_005.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 8,
+        "trajectory_points": 16
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_006.mp4",
+      "shot": {
+        "prediction": "Lofted",
+        "confidence": 0.204701,
+        "class_probabilities": {
+          "Cover": 0.065113,
+          "Defense": 0.054826,
+          "Flick": 0.121464,
+          "Hook": 0.051925,
+          "Late Cut": 0.140887,
+          "Lofted": 0.204701,
+          "Pull": 0.076392,
+          "Square Cut": 0.053066,
+          "Straight": 0.071044,
+          "Sweep": 0.160582
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 10,
+        "trajectory": [
+          {
+            "frame": 3,
+            "x": 323,
+            "y": 150
+          },
+          {
+            "frame": 4,
+            "x": 324,
+            "y": 154
+          },
+          {
+            "frame": 5,
+            "x": 327,
+            "y": 163
+          },
+          {
+            "frame": 6,
+            "x": 330,
+            "y": 175
+          },
+          {
+            "frame": 7,
+            "x": 332,
+            "y": 189
+          },
+          {
+            "frame": 8,
+            "x": 334,
+            "y": 205
+          },
+          {
+            "frame": 9,
+            "x": 337,
+            "y": 217
+          },
+          {
+            "frame": 10,
+            "x": 341,
+            "y": 210
+          },
+          {
+            "frame": 11,
+            "x": 346,
+            "y": 194
+          },
+          {
+            "frame": 12,
+            "x": 336,
+            "y": 164
+          },
+          {
+            "frame": 13,
+            "x": 330,
+            "y": 149
+          },
+          {
+            "frame": 14,
+            "x": 324,
+            "y": 133
+          },
+          {
+            "frame": 15,
+            "x": 318,
+            "y": 118
+          },
+          {
+            "frame": 16,
+            "x": 312,
+            "y": 102
+          },
+          {
+            "frame": 17,
+            "x": 306,
+            "y": 87
+          },
+          {
+            "frame": 18,
+            "x": 300,
+            "y": 72
+          },
+          {
+            "frame": 19,
+            "x": 295,
+            "y": 56
+          },
+          {
+            "frame": 20,
+            "x": 289,
+            "y": 41
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_006.mp4",
+      "clip_name": "delivery_006.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 10,
+        "trajectory_points": 18
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_007.mp4",
+      "shot": {
+        "prediction": "Square Cut",
+        "confidence": 0.490637,
+        "class_probabilities": {
+          "Cover": 0.067378,
+          "Defense": 0.04398,
+          "Flick": 0.074798,
+          "Hook": 0.052205,
+          "Late Cut": 0.062242,
+          "Lofted": 0.059158,
+          "Pull": 0.040565,
+          "Square Cut": 0.490637,
+          "Straight": 0.055647,
+          "Sweep": 0.053389
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 5,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 298,
+            "y": 214
+          },
+          {
+            "frame": 2,
+            "x": 299,
+            "y": 207
+          },
+          {
+            "frame": 3,
+            "x": 301,
+            "y": 196
+          },
+          {
+            "frame": 4,
+            "x": 303,
+            "y": 186
+          },
+          {
+            "frame": 5,
+            "x": 319,
+            "y": 191
+          },
+          {
+            "frame": 6,
+            "x": 327,
+            "y": 194
+          },
+          {
+            "frame": 7,
+            "x": 335,
+            "y": 197
+          },
+          {
+            "frame": 8,
+            "x": 343,
+            "y": 200
+          },
+          {
+            "frame": 9,
+            "x": 352,
+            "y": 203
+          },
+          {
+            "frame": 10,
+            "x": 360,
+            "y": 205
+          },
+          {
+            "frame": 11,
+            "x": 368,
+            "y": 208
+          },
+          {
+            "frame": 12,
+            "x": 376,
+            "y": 211
+          },
+          {
+            "frame": 13,
+            "x": 384,
+            "y": 214
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_007.mp4",
+      "clip_name": "delivery_007.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 5,
+        "trajectory_points": 13
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_008.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.302951,
+        "class_probabilities": {
+          "Cover": 0.077063,
+          "Defense": 0.051628,
+          "Flick": 0.073954,
+          "Hook": 0.079151,
+          "Late Cut": 0.302951,
+          "Lofted": 0.086164,
+          "Pull": 0.096741,
+          "Square Cut": 0.06206,
+          "Straight": 0.075766,
+          "Sweep": 0.094524
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 3,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 270,
+            "y": 176
+          },
+          {
+            "frame": 2,
+            "x": 270,
+            "y": 176
+          },
+          {
+            "frame": 3,
+            "x": 273,
+            "y": 162
+          },
+          {
+            "frame": 4,
+            "x": 275,
+            "y": 154
+          },
+          {
+            "frame": 5,
+            "x": 271,
+            "y": 158
+          },
+          {
+            "frame": 6,
+            "x": 268,
+            "y": 160
+          },
+          {
+            "frame": 7,
+            "x": 266,
+            "y": 163
+          },
+          {
+            "frame": 8,
+            "x": 263,
+            "y": 165
+          },
+          {
+            "frame": 9,
+            "x": 261,
+            "y": 168
+          },
+          {
+            "frame": 10,
+            "x": 259,
+            "y": 170
+          },
+          {
+            "frame": 11,
+            "x": 256,
+            "y": 173
+          },
+          {
+            "frame": 12,
+            "x": 254,
+            "y": 176
+          },
+          {
+            "frame": 13,
+            "x": 252,
+            "y": 178
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_008.mp4",
+      "clip_name": "delivery_008.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 3,
+        "trajectory_points": 13
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_009.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.331003,
+        "class_probabilities": {
+          "Cover": 0.08615,
+          "Defense": 0.040822,
+          "Flick": 0.071376,
+          "Hook": 0.063974,
+          "Late Cut": 0.331003,
+          "Lofted": 0.062598,
+          "Pull": 0.090489,
+          "Square Cut": 0.037929,
+          "Straight": 0.062488,
+          "Sweep": 0.153171
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 8,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 305,
+            "y": 169
+          },
+          {
+            "frame": 2,
+            "x": 306,
+            "y": 177
+          },
+          {
+            "frame": 3,
+            "x": 307,
+            "y": 193
+          },
+          {
+            "frame": 4,
+            "x": 309,
+            "y": 214
+          },
+          {
+            "frame": 5,
+            "x": 312,
+            "y": 224
+          },
+          {
+            "frame": 6,
+            "x": 313,
+            "y": 228
+          },
+          {
+            "frame": 7,
+            "x": 315,
+            "y": 232
+          },
+          {
+            "frame": 8,
+            "x": 316,
+            "y": 237
+          },
+          {
+            "frame": 9,
+            "x": 318,
+            "y": 241
+          },
+          {
+            "frame": 10,
+            "x": 319,
+            "y": 245
+          },
+          {
+            "frame": 11,
+            "x": 321,
+            "y": 250
+          },
+          {
+            "frame": 12,
+            "x": 322,
+            "y": 254
+          },
+          {
+            "frame": 13,
+            "x": 334,
+            "y": 255
+          },
+          {
+            "frame": 14,
+            "x": 340,
+            "y": 255
+          },
+          {
+            "frame": 15,
+            "x": 346,
+            "y": 255
+          },
+          {
+            "frame": 16,
+            "x": 353,
+            "y": 255
+          },
+          {
+            "frame": 17,
+            "x": 359,
+            "y": 255
+          },
+          {
+            "frame": 18,
+            "x": 365,
+            "y": 255
+          },
+          {
+            "frame": 19,
+            "x": 336,
+            "y": 245
+          },
+          {
+            "frame": 20,
+            "x": 308,
+            "y": 238
+          },
+          {
+            "frame": 21,
+            "x": 295,
+            "y": 235
+          },
+          {
+            "frame": 22,
+            "x": 281,
+            "y": 232
+          },
+          {
+            "frame": 23,
+            "x": 268,
+            "y": 229
+          },
+          {
+            "frame": 24,
+            "x": 254,
+            "y": 226
+          },
+          {
+            "frame": 25,
+            "x": 241,
+            "y": 223
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_009.mp4",
+      "clip_name": "delivery_009.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 8,
+        "trajectory_points": 25
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_010.mp4",
+      "shot": {
+        "prediction": "Sweep",
+        "confidence": 0.32546,
+        "class_probabilities": {
+          "Cover": 0.076324,
+          "Defense": 0.068305,
+          "Flick": 0.152524,
+          "Hook": 0.056766,
+          "Late Cut": 0.072002,
+          "Lofted": 0.040959,
+          "Pull": 0.059991,
+          "Square Cut": 0.045069,
+          "Straight": 0.1026,
+          "Sweep": 0.32546
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 14,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 284,
+            "y": 162
+          },
+          {
+            "frame": 2,
+            "x": 285,
+            "y": 167
+          },
+          {
+            "frame": 3,
+            "x": 287,
+            "y": 179
+          },
+          {
+            "frame": 4,
+            "x": 289,
+            "y": 194
+          },
+          {
+            "frame": 5,
+            "x": 291,
+            "y": 210
+          },
+          {
+            "frame": 6,
+            "x": 292,
+            "y": 226
+          },
+          {
+            "frame": 7,
+            "x": 294,
+            "y": 244
+          },
+          {
+            "frame": 8,
+            "x": 296,
+            "y": 264
+          },
+          {
+            "frame": 9,
+            "x": 299,
+            "y": 275
+          },
+          {
+            "frame": 10,
+            "x": 304,
+            "y": 269
+          },
+          {
+            "frame": 11,
+            "x": 311,
+            "y": 254
+          },
+          {
+            "frame": 12,
+            "x": 314,
+            "y": 247
+          },
+          {
+            "frame": 13,
+            "x": 324,
+            "y": 231
+          },
+          {
+            "frame": 14,
+            "x": 334,
+            "y": 219
+          },
+          {
+            "frame": 15,
+            "x": 338,
+            "y": 213
+          },
+          {
+            "frame": 16,
+            "x": 343,
+            "y": 207
+          },
+          {
+            "frame": 17,
+            "x": 348,
+            "y": 201
+          },
+          {
+            "frame": 18,
+            "x": 353,
+            "y": 195
+          },
+          {
+            "frame": 19,
+            "x": 342,
+            "y": 212
+          },
+          {
+            "frame": 20,
+            "x": 335,
+            "y": 223
+          },
+          {
+            "frame": 21,
+            "x": 328,
+            "y": 233
+          },
+          {
+            "frame": 22,
+            "x": 322,
+            "y": 243
+          },
+          {
+            "frame": 23,
+            "x": 315,
+            "y": 254
+          },
+          {
+            "frame": 24,
+            "x": 309,
+            "y": 264
+          },
+          {
+            "frame": 25,
+            "x": 302,
+            "y": 274
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_010.mp4",
+      "clip_name": "delivery_010.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 14,
+        "trajectory_points": 25
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_011.mp4",
+      "shot": {
+        "prediction": "Hook",
+        "confidence": 0.197186,
+        "class_probabilities": {
+          "Cover": 0.086683,
+          "Defense": 0.059678,
+          "Flick": 0.066067,
+          "Hook": 0.197186,
+          "Late Cut": 0.103298,
+          "Lofted": 0.092686,
+          "Pull": 0.108067,
+          "Square Cut": 0.082682,
+          "Straight": 0.123418,
+          "Sweep": 0.080235
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 10,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 322,
+            "y": 214
+          },
+          {
+            "frame": 2,
+            "x": 323,
+            "y": 226
+          },
+          {
+            "frame": 3,
+            "x": 324,
+            "y": 245
+          },
+          {
+            "frame": 4,
+            "x": 324,
+            "y": 247
+          },
+          {
+            "frame": 5,
+            "x": 324,
+            "y": 236
+          },
+          {
+            "frame": 6,
+            "x": 321,
+            "y": 223
+          },
+          {
+            "frame": 7,
+            "x": 317,
+            "y": 212
+          },
+          {
+            "frame": 8,
+            "x": 315,
+            "y": 207
+          },
+          {
+            "frame": 9,
+            "x": 309,
+            "y": 198
+          },
+          {
+            "frame": 10,
+            "x": 301,
+            "y": 192
+          },
+          {
+            "frame": 11,
+            "x": 297,
+            "y": 189
+          },
+          {
+            "frame": 12,
+            "x": 293,
+            "y": 186
+          },
+          {
+            "frame": 13,
+            "x": 289,
+            "y": 184
+          },
+          {
+            "frame": 14,
+            "x": 285,
+            "y": 181
+          },
+          {
+            "frame": 15,
+            "x": 282,
+            "y": 178
+          },
+          {
+            "frame": 16,
+            "x": 278,
+            "y": 175
+          },
+          {
+            "frame": 17,
+            "x": 274,
+            "y": 172
+          },
+          {
+            "frame": 18,
+            "x": 270,
+            "y": 169
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_011.mp4",
+      "clip_name": "delivery_011.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 10,
+        "trajectory_points": 18
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_012.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.383966,
+        "class_probabilities": {
+          "Cover": 0.079257,
+          "Defense": 0.048426,
+          "Flick": 0.066095,
+          "Hook": 0.06538,
+          "Late Cut": 0.383966,
+          "Lofted": 0.052136,
+          "Pull": 0.071686,
+          "Square Cut": 0.056578,
+          "Straight": 0.073449,
+          "Sweep": 0.103026
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 11,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 285,
+            "y": 160
+          },
+          {
+            "frame": 2,
+            "x": 285,
+            "y": 150
+          },
+          {
+            "frame": 3,
+            "x": 286,
+            "y": 145
+          },
+          {
+            "frame": 4,
+            "x": 286,
+            "y": 140
+          },
+          {
+            "frame": 5,
+            "x": 286,
+            "y": 135
+          },
+          {
+            "frame": 6,
+            "x": 287,
+            "y": 130
+          },
+          {
+            "frame": 7,
+            "x": 287,
+            "y": 125
+          },
+          {
+            "frame": 8,
+            "x": 287,
+            "y": 120
+          },
+          {
+            "frame": 9,
+            "x": 288,
+            "y": 115
+          },
+          {
+            "frame": 10,
+            "x": 288,
+            "y": 110
+          },
+          {
+            "frame": 11,
+            "x": 314,
+            "y": 259
+          },
+          {
+            "frame": 12,
+            "x": 314,
+            "y": 259
+          },
+          {
+            "frame": 13,
+            "x": 314,
+            "y": 259
+          },
+          {
+            "frame": 14,
+            "x": 314,
+            "y": 255
+          },
+          {
+            "frame": 15,
+            "x": 314,
+            "y": 255
+          },
+          {
+            "frame": 16,
+            "x": 314,
+            "y": 255
+          },
+          {
+            "frame": 17,
+            "x": 314,
+            "y": 255
+          },
+          {
+            "frame": 18,
+            "x": 314,
+            "y": 255
+          },
+          {
+            "frame": 19,
+            "x": 313,
+            "y": 255
+          },
+          {
+            "frame": 20,
+            "x": 312,
+            "y": 258
+          },
+          {
+            "frame": 21,
+            "x": 311,
+            "y": 261
+          },
+          {
+            "frame": 22,
+            "x": 309,
+            "y": 263
+          },
+          {
+            "frame": 23,
+            "x": 309,
+            "y": 263
+          },
+          {
+            "frame": 24,
+            "x": 308,
+            "y": 264
+          },
+          {
+            "frame": 25,
+            "x": 308,
+            "y": 264
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_012.mp4",
+      "clip_name": "delivery_012.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 11,
+        "trajectory_points": 25
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_013.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.398921,
+        "class_probabilities": {
+          "Cover": 0.042669,
+          "Defense": 0.110085,
+          "Flick": 0.058003,
+          "Hook": 0.056926,
+          "Late Cut": 0.398921,
+          "Lofted": 0.080899,
+          "Pull": 0.049465,
+          "Square Cut": 0.06169,
+          "Straight": 0.096383,
+          "Sweep": 0.044959
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 1,
+        "trajectory": [
+          {
+            "frame": 4,
+            "x": 314,
+            "y": 246
+          },
+          {
+            "frame": 5,
+            "x": 314,
+            "y": 246
+          },
+          {
+            "frame": 6,
+            "x": 314,
+            "y": 246
+          },
+          {
+            "frame": 7,
+            "x": 314,
+            "y": 246
+          },
+          {
+            "frame": 8,
+            "x": 314,
+            "y": 246
+          },
+          {
+            "frame": 9,
+            "x": 314,
+            "y": 246
+          },
+          {
+            "frame": 10,
+            "x": 314,
+            "y": 246
+          },
+          {
+            "frame": 11,
+            "x": 314,
+            "y": 246
+          },
+          {
+            "frame": 12,
+            "x": 314,
+            "y": 246
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_013.mp4",
+      "clip_name": "delivery_013.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 1,
+        "trajectory_points": 9
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_014.mp4",
+      "shot": {
+        "prediction": "Cover",
+        "confidence": 0.391533,
+        "class_probabilities": {
+          "Cover": 0.391533,
+          "Defense": 0.055055,
+          "Flick": 0.060375,
+          "Hook": 0.063927,
+          "Late Cut": 0.116428,
+          "Lofted": 0.047828,
+          "Pull": 0.063701,
+          "Square Cut": 0.058162,
+          "Straight": 0.094944,
+          "Sweep": 0.048046
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 2,
+        "trajectory": [
+          {
+            "frame": 13,
+            "x": 388,
+            "y": 223
+          },
+          {
+            "frame": 14,
+            "x": 388,
+            "y": 223
+          },
+          {
+            "frame": 15,
+            "x": 388,
+            "y": 223
+          },
+          {
+            "frame": 16,
+            "x": 388,
+            "y": 223
+          },
+          {
+            "frame": 17,
+            "x": 319,
+            "y": 195
+          },
+          {
+            "frame": 18,
+            "x": 281,
+            "y": 179
+          },
+          {
+            "frame": 19,
+            "x": 243,
+            "y": 164
+          },
+          {
+            "frame": 20,
+            "x": 205,
+            "y": 148
+          },
+          {
+            "frame": 21,
+            "x": 167,
+            "y": 133
+          },
+          {
+            "frame": 22,
+            "x": 129,
+            "y": 118
+          },
+          {
+            "frame": 23,
+            "x": 91,
+            "y": 102
+          },
+          {
+            "frame": 24,
+            "x": 53,
+            "y": 87
+          },
+          {
+            "frame": 25,
+            "x": 15,
+            "y": 72
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_014.mp4",
+      "clip_name": "delivery_014.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 2,
+        "trajectory_points": 13
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_015.mp4",
+      "shot": {
+        "prediction": "Flick",
+        "confidence": 0.359163,
+        "class_probabilities": {
+          "Cover": 0.047085,
+          "Defense": 0.045189,
+          "Flick": 0.359163,
+          "Hook": 0.061687,
+          "Late Cut": 0.17425,
+          "Lofted": 0.048509,
+          "Pull": 0.048504,
+          "Square Cut": 0.046714,
+          "Straight": 0.065857,
+          "Sweep": 0.103042
+        }
+      },
+      "ball": {
+        "tracking_success": false,
+        "message": "No usable ball trajectory was detected.",
+        "frames_processed": 25,
+        "detections": 0,
+        "trajectory": []
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_015.mp4",
+      "clip_name": "delivery_015.mp4",
+      "tracking_summary": {
+        "success": false,
+        "frames_processed": 25,
+        "detections": 0,
+        "trajectory_points": 0
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_016.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.40215,
+        "class_probabilities": {
+          "Cover": 0.057606,
+          "Defense": 0.049481,
+          "Flick": 0.06255,
+          "Hook": 0.069335,
+          "Late Cut": 0.40215,
+          "Lofted": 0.077848,
+          "Pull": 0.065919,
+          "Square Cut": 0.0709,
+          "Straight": 0.08096,
+          "Sweep": 0.063251
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 1,
+        "trajectory": [
+          {
+            "frame": 6,
+            "x": 132,
+            "y": 166
+          },
+          {
+            "frame": 7,
+            "x": 132,
+            "y": 166
+          },
+          {
+            "frame": 8,
+            "x": 132,
+            "y": 166
+          },
+          {
+            "frame": 9,
+            "x": 132,
+            "y": 166
+          },
+          {
+            "frame": 10,
+            "x": 132,
+            "y": 166
+          },
+          {
+            "frame": 11,
+            "x": 132,
+            "y": 166
+          },
+          {
+            "frame": 12,
+            "x": 132,
+            "y": 166
+          },
+          {
+            "frame": 13,
+            "x": 132,
+            "y": 166
+          },
+          {
+            "frame": 14,
+            "x": 132,
+            "y": 166
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_016.mp4",
+      "clip_name": "delivery_016.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 1,
+        "trajectory_points": 9
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_017.mp4",
+      "shot": {
+        "prediction": "Cover",
+        "confidence": 0.279072,
+        "class_probabilities": {
+          "Cover": 0.279072,
+          "Defense": 0.042918,
+          "Flick": 0.2524,
+          "Hook": 0.049484,
+          "Late Cut": 0.111873,
+          "Lofted": 0.034559,
+          "Pull": 0.050811,
+          "Square Cut": 0.063364,
+          "Straight": 0.055648,
+          "Sweep": 0.059869
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 4,
+        "trajectory": [
+          {
+            "frame": 5,
+            "x": 270,
+            "y": 165
+          },
+          {
+            "frame": 6,
+            "x": 270,
+            "y": 165
+          },
+          {
+            "frame": 7,
+            "x": 270,
+            "y": 165
+          },
+          {
+            "frame": 8,
+            "x": 270,
+            "y": 165
+          },
+          {
+            "frame": 9,
+            "x": 282,
+            "y": 180
+          },
+          {
+            "frame": 10,
+            "x": 292,
+            "y": 184
+          },
+          {
+            "frame": 11,
+            "x": 295,
+            "y": 171
+          },
+          {
+            "frame": 12,
+            "x": 296,
+            "y": 163
+          },
+          {
+            "frame": 13,
+            "x": 297,
+            "y": 156
+          },
+          {
+            "frame": 14,
+            "x": 299,
+            "y": 149
+          },
+          {
+            "frame": 15,
+            "x": 300,
+            "y": 142
+          },
+          {
+            "frame": 16,
+            "x": 301,
+            "y": 134
+          },
+          {
+            "frame": 17,
+            "x": 303,
+            "y": 127
+          },
+          {
+            "frame": 18,
+            "x": 304,
+            "y": 120
+          },
+          {
+            "frame": 19,
+            "x": 305,
+            "y": 113
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_017.mp4",
+      "clip_name": "delivery_017.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 4,
+        "trajectory_points": 15
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_018.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.176634,
+        "class_probabilities": {
+          "Cover": 0.089968,
+          "Defense": 0.070594,
+          "Flick": 0.074038,
+          "Hook": 0.145516,
+          "Late Cut": 0.176634,
+          "Lofted": 0.074544,
+          "Pull": 0.067211,
+          "Square Cut": 0.083532,
+          "Straight": 0.104996,
+          "Sweep": 0.112968
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 11,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 294,
+            "y": 186
+          },
+          {
+            "frame": 2,
+            "x": 295,
+            "y": 191
+          },
+          {
+            "frame": 3,
+            "x": 298,
+            "y": 203
+          },
+          {
+            "frame": 4,
+            "x": 301,
+            "y": 218
+          },
+          {
+            "frame": 5,
+            "x": 305,
+            "y": 235
+          },
+          {
+            "frame": 6,
+            "x": 309,
+            "y": 250
+          },
+          {
+            "frame": 7,
+            "x": 311,
+            "y": 254
+          },
+          {
+            "frame": 8,
+            "x": 312,
+            "y": 255
+          },
+          {
+            "frame": 9,
+            "x": 313,
+            "y": 256
+          },
+          {
+            "frame": 10,
+            "x": 315,
+            "y": 257
+          },
+          {
+            "frame": 11,
+            "x": 316,
+            "y": 259
+          },
+          {
+            "frame": 12,
+            "x": 317,
+            "y": 260
+          },
+          {
+            "frame": 13,
+            "x": 318,
+            "y": 261
+          },
+          {
+            "frame": 14,
+            "x": 319,
+            "y": 262
+          },
+          {
+            "frame": 15,
+            "x": 320,
+            "y": 264
+          },
+          {
+            "frame": 16,
+            "x": 211,
+            "y": 87
+          },
+          {
+            "frame": 17,
+            "x": 201,
+            "y": 77
+          },
+          {
+            "frame": 18,
+            "x": 196,
+            "y": 71
+          },
+          {
+            "frame": 19,
+            "x": 191,
+            "y": 66
+          },
+          {
+            "frame": 20,
+            "x": 186,
+            "y": 61
+          },
+          {
+            "frame": 21,
+            "x": 181,
+            "y": 55
+          },
+          {
+            "frame": 22,
+            "x": 176,
+            "y": 50
+          },
+          {
+            "frame": 23,
+            "x": 171,
+            "y": 45
+          },
+          {
+            "frame": 24,
+            "x": 166,
+            "y": 39
+          },
+          {
+            "frame": 25,
+            "x": 161,
+            "y": 34
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_018.mp4",
+      "clip_name": "delivery_018.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 11,
+        "trajectory_points": 25
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_019.mp4",
+      "shot": {
+        "prediction": "Straight",
+        "confidence": 0.428021,
+        "class_probabilities": {
+          "Cover": 0.041331,
+          "Defense": 0.067186,
+          "Flick": 0.045854,
+          "Hook": 0.121906,
+          "Late Cut": 0.087102,
+          "Lofted": 0.06185,
+          "Pull": 0.055749,
+          "Square Cut": 0.044221,
+          "Straight": 0.428021,
+          "Sweep": 0.046779
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 7,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 289,
+            "y": 189
+          },
+          {
+            "frame": 2,
+            "x": 290,
+            "y": 181
+          },
+          {
+            "frame": 3,
+            "x": 293,
+            "y": 167
+          },
+          {
+            "frame": 4,
+            "x": 297,
+            "y": 154
+          },
+          {
+            "frame": 5,
+            "x": 299,
+            "y": 147
+          },
+          {
+            "frame": 6,
+            "x": 301,
+            "y": 141
+          },
+          {
+            "frame": 7,
+            "x": 303,
+            "y": 174
+          },
+          {
+            "frame": 8,
+            "x": 304,
+            "y": 211
+          },
+          {
+            "frame": 9,
+            "x": 304,
+            "y": 229
+          },
+          {
+            "frame": 10,
+            "x": 305,
+            "y": 248
+          },
+          {
+            "frame": 11,
+            "x": 305,
+            "y": 266
+          },
+          {
+            "frame": 12,
+            "x": 306,
+            "y": 285
+          },
+          {
+            "frame": 13,
+            "x": 306,
+            "y": 303
+          },
+          {
+            "frame": 14,
+            "x": 307,
+            "y": 321
+          },
+          {
+            "frame": 15,
+            "x": 307,
+            "y": 340
+          },
+          {
+            "frame": 16,
+            "x": 308,
+            "y": 358
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_019.mp4",
+      "clip_name": "delivery_019.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 7,
+        "trajectory_points": 16
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_020.mp4",
+      "shot": {
+        "prediction": "Pull",
+        "confidence": 0.519639,
+        "class_probabilities": {
+          "Cover": 0.059648,
+          "Defense": 0.055034,
+          "Flick": 0.057878,
+          "Hook": 0.065998,
+          "Late Cut": 0.047063,
+          "Lofted": 0.055874,
+          "Pull": 0.519639,
+          "Square Cut": 0.040416,
+          "Straight": 0.05752,
+          "Sweep": 0.040931
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 9,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 275,
+            "y": 190
+          },
+          {
+            "frame": 2,
+            "x": 275,
+            "y": 198
+          },
+          {
+            "frame": 3,
+            "x": 276,
+            "y": 213
+          },
+          {
+            "frame": 4,
+            "x": 277,
+            "y": 231
+          },
+          {
+            "frame": 5,
+            "x": 278,
+            "y": 240
+          },
+          {
+            "frame": 6,
+            "x": 280,
+            "y": 234
+          },
+          {
+            "frame": 7,
+            "x": 282,
+            "y": 216
+          },
+          {
+            "frame": 8,
+            "x": 285,
+            "y": 201
+          },
+          {
+            "frame": 9,
+            "x": 286,
+            "y": 193
+          },
+          {
+            "frame": 10,
+            "x": 277,
+            "y": 203
+          },
+          {
+            "frame": 11,
+            "x": 261,
+            "y": 227
+          },
+          {
+            "frame": 12,
+            "x": 253,
+            "y": 240
+          },
+          {
+            "frame": 13,
+            "x": 245,
+            "y": 252
+          },
+          {
+            "frame": 14,
+            "x": 238,
+            "y": 265
+          },
+          {
+            "frame": 15,
+            "x": 230,
+            "y": 278
+          },
+          {
+            "frame": 16,
+            "x": 222,
+            "y": 290
+          },
+          {
+            "frame": 17,
+            "x": 214,
+            "y": 303
+          },
+          {
+            "frame": 18,
+            "x": 206,
+            "y": 316
+          },
+          {
+            "frame": 19,
+            "x": 198,
+            "y": 328
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_020.mp4",
+      "clip_name": "delivery_020.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 9,
+        "trajectory_points": 19
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_021.mp4",
+      "shot": {
+        "prediction": "Hook",
+        "confidence": 0.351914,
+        "class_probabilities": {
+          "Cover": 0.083507,
+          "Defense": 0.069218,
+          "Flick": 0.086102,
+          "Hook": 0.351914,
+          "Late Cut": 0.063943,
+          "Lofted": 0.077494,
+          "Pull": 0.054681,
+          "Square Cut": 0.077618,
+          "Straight": 0.058275,
+          "Sweep": 0.077247
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 4,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 265,
+            "y": 191
+          },
+          {
+            "frame": 2,
+            "x": 265,
+            "y": 180
+          },
+          {
+            "frame": 3,
+            "x": 266,
+            "y": 163
+          },
+          {
+            "frame": 4,
+            "x": 266,
+            "y": 148
+          },
+          {
+            "frame": 5,
+            "x": 266,
+            "y": 140
+          },
+          {
+            "frame": 6,
+            "x": 266,
+            "y": 132
+          },
+          {
+            "frame": 7,
+            "x": 266,
+            "y": 124
+          },
+          {
+            "frame": 8,
+            "x": 266,
+            "y": 117
+          },
+          {
+            "frame": 9,
+            "x": 266,
+            "y": 109
+          },
+          {
+            "frame": 10,
+            "x": 266,
+            "y": 101
+          },
+          {
+            "frame": 11,
+            "x": 266,
+            "y": 93
+          },
+          {
+            "frame": 12,
+            "x": 266,
+            "y": 85
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_021.mp4",
+      "clip_name": "delivery_021.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 4,
+        "trajectory_points": 12
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_022.mp4",
+      "shot": {
+        "prediction": "Straight",
+        "confidence": 0.27571,
+        "class_probabilities": {
+          "Cover": 0.07517,
+          "Defense": 0.085014,
+          "Flick": 0.062471,
+          "Hook": 0.044217,
+          "Late Cut": 0.222499,
+          "Lofted": 0.06819,
+          "Pull": 0.057594,
+          "Square Cut": 0.0588,
+          "Straight": 0.27571,
+          "Sweep": 0.050337
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 2,
+        "trajectory": [
+          {
+            "frame": 10,
+            "x": 451,
+            "y": 72
+          },
+          {
+            "frame": 11,
+            "x": 451,
+            "y": 72
+          },
+          {
+            "frame": 12,
+            "x": 451,
+            "y": 72
+          },
+          {
+            "frame": 13,
+            "x": 451,
+            "y": 72
+          },
+          {
+            "frame": 14,
+            "x": 451,
+            "y": 72
+          },
+          {
+            "frame": 15,
+            "x": 451,
+            "y": 72
+          },
+          {
+            "frame": 16,
+            "x": 451,
+            "y": 72
+          },
+          {
+            "frame": 17,
+            "x": 451,
+            "y": 72
+          },
+          {
+            "frame": 18,
+            "x": 451,
+            "y": 72
+          },
+          {
+            "frame": 21,
+            "x": 484,
+            "y": 83
+          },
+          {
+            "frame": 22,
+            "x": 503,
+            "y": 90
+          },
+          {
+            "frame": 23,
+            "x": 521,
+            "y": 96
+          },
+          {
+            "frame": 24,
+            "x": 540,
+            "y": 103
+          },
+          {
+            "frame": 25,
+            "x": 559,
+            "y": 109
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_022.mp4",
+      "clip_name": "delivery_022.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 2,
+        "trajectory_points": 14
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_023.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.345392,
+        "class_probabilities": {
+          "Cover": 0.06866,
+          "Defense": 0.096702,
+          "Flick": 0.066975,
+          "Hook": 0.062492,
+          "Late Cut": 0.345392,
+          "Lofted": 0.085931,
+          "Pull": 0.073411,
+          "Square Cut": 0.053688,
+          "Straight": 0.086674,
+          "Sweep": 0.060074
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 14,
+        "trajectory": [
+          {
+            "frame": 10,
+            "x": 362,
+            "y": 165
+          },
+          {
+            "frame": 11,
+            "x": 351,
+            "y": 156
+          },
+          {
+            "frame": 12,
+            "x": 340,
+            "y": 147
+          },
+          {
+            "frame": 13,
+            "x": 333,
+            "y": 145
+          },
+          {
+            "frame": 14,
+            "x": 330,
+            "y": 149
+          },
+          {
+            "frame": 15,
+            "x": 329,
+            "y": 156
+          },
+          {
+            "frame": 16,
+            "x": 327,
+            "y": 163
+          },
+          {
+            "frame": 17,
+            "x": 325,
+            "y": 172
+          },
+          {
+            "frame": 18,
+            "x": 325,
+            "y": 182
+          },
+          {
+            "frame": 19,
+            "x": 325,
+            "y": 194
+          },
+          {
+            "frame": 20,
+            "x": 326,
+            "y": 207
+          },
+          {
+            "frame": 21,
+            "x": 328,
+            "y": 204
+          },
+          {
+            "frame": 22,
+            "x": 330,
+            "y": 190
+          },
+          {
+            "frame": 23,
+            "x": 332,
+            "y": 176
+          },
+          {
+            "frame": 24,
+            "x": 333,
+            "y": 169
+          },
+          {
+            "frame": 25,
+            "x": 335,
+            "y": 162
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_023.mp4",
+      "clip_name": "delivery_023.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 14,
+        "trajectory_points": 16
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_024.mp4",
+      "shot": {
+        "prediction": "Pull",
+        "confidence": 0.320524,
+        "class_probabilities": {
+          "Cover": 0.227927,
+          "Defense": 0.049265,
+          "Flick": 0.108387,
+          "Hook": 0.046389,
+          "Late Cut": 0.049888,
+          "Lofted": 0.03406,
+          "Pull": 0.320524,
+          "Square Cut": 0.064931,
+          "Straight": 0.06096,
+          "Sweep": 0.037668
+        }
+      },
+      "ball": {
+        "tracking_success": false,
+        "message": "No usable ball trajectory was detected.",
+        "frames_processed": 25,
+        "detections": 0,
+        "trajectory": []
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_024.mp4",
+      "clip_name": "delivery_024.mp4",
+      "tracking_summary": {
+        "success": false,
+        "frames_processed": 25,
+        "detections": 0,
+        "trajectory_points": 0
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_025.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.363374,
+        "class_probabilities": {
+          "Cover": 0.094455,
+          "Defense": 0.057312,
+          "Flick": 0.065789,
+          "Hook": 0.062659,
+          "Late Cut": 0.363374,
+          "Lofted": 0.067425,
+          "Pull": 0.066629,
+          "Square Cut": 0.080133,
+          "Straight": 0.081234,
+          "Sweep": 0.06099
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 16,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 389,
+            "y": 150
+          },
+          {
+            "frame": 2,
+            "x": 389,
+            "y": 155
+          },
+          {
+            "frame": 3,
+            "x": 389,
+            "y": 164
+          },
+          {
+            "frame": 4,
+            "x": 389,
+            "y": 176
+          },
+          {
+            "frame": 5,
+            "x": 390,
+            "y": 191
+          },
+          {
+            "frame": 6,
+            "x": 392,
+            "y": 208
+          },
+          {
+            "frame": 7,
+            "x": 393,
+            "y": 216
+          },
+          {
+            "frame": 8,
+            "x": 397,
+            "y": 229
+          },
+          {
+            "frame": 9,
+            "x": 402,
+            "y": 223
+          },
+          {
+            "frame": 10,
+            "x": 374,
+            "y": 208
+          },
+          {
+            "frame": 11,
+            "x": 386,
+            "y": 190
+          },
+          {
+            "frame": 12,
+            "x": 394,
+            "y": 181
+          },
+          {
+            "frame": 13,
+            "x": 421,
+            "y": 166
+          },
+          {
+            "frame": 14,
+            "x": 441,
+            "y": 154
+          },
+          {
+            "frame": 15,
+            "x": 453,
+            "y": 143
+          },
+          {
+            "frame": 16,
+            "x": 461,
+            "y": 133
+          },
+          {
+            "frame": 17,
+            "x": 471,
+            "y": 123
+          },
+          {
+            "frame": 18,
+            "x": 484,
+            "y": 111
+          },
+          {
+            "frame": 19,
+            "x": 491,
+            "y": 105
+          },
+          {
+            "frame": 20,
+            "x": 499,
+            "y": 99
+          },
+          {
+            "frame": 21,
+            "x": 506,
+            "y": 94
+          },
+          {
+            "frame": 22,
+            "x": 513,
+            "y": 88
+          },
+          {
+            "frame": 23,
+            "x": 520,
+            "y": 82
+          },
+          {
+            "frame": 24,
+            "x": 527,
+            "y": 76
+          },
+          {
+            "frame": 25,
+            "x": 534,
+            "y": 70
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_025.mp4",
+      "clip_name": "delivery_025.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 16,
+        "trajectory_points": 25
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_026.mp4",
+      "shot": {
+        "prediction": "Cover",
+        "confidence": 0.235039,
+        "class_probabilities": {
+          "Cover": 0.235039,
+          "Defense": 0.064119,
+          "Flick": 0.083555,
+          "Hook": 0.07233,
+          "Late Cut": 0.146679,
+          "Lofted": 0.076798,
+          "Pull": 0.067649,
+          "Square Cut": 0.060313,
+          "Straight": 0.141709,
+          "Sweep": 0.05181
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 18,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 282,
+            "y": 146
+          },
+          {
+            "frame": 2,
+            "x": 284,
+            "y": 149
+          },
+          {
+            "frame": 3,
+            "x": 289,
+            "y": 157
+          },
+          {
+            "frame": 4,
+            "x": 296,
+            "y": 168
+          },
+          {
+            "frame": 5,
+            "x": 303,
+            "y": 179
+          },
+          {
+            "frame": 6,
+            "x": 309,
+            "y": 191
+          },
+          {
+            "frame": 7,
+            "x": 317,
+            "y": 191
+          },
+          {
+            "frame": 8,
+            "x": 325,
+            "y": 179
+          },
+          {
+            "frame": 9,
+            "x": 332,
+            "y": 163
+          },
+          {
+            "frame": 10,
+            "x": 342,
+            "y": 151
+          },
+          {
+            "frame": 11,
+            "x": 352,
+            "y": 140
+          },
+          {
+            "frame": 12,
+            "x": 361,
+            "y": 130
+          },
+          {
+            "frame": 13,
+            "x": 369,
+            "y": 120
+          },
+          {
+            "frame": 14,
+            "x": 376,
+            "y": 111
+          },
+          {
+            "frame": 15,
+            "x": 383,
+            "y": 103
+          },
+          {
+            "frame": 16,
+            "x": 386,
+            "y": 99
+          },
+          {
+            "frame": 17,
+            "x": 389,
+            "y": 95
+          },
+          {
+            "frame": 18,
+            "x": 392,
+            "y": 91
+          },
+          {
+            "frame": 19,
+            "x": 399,
+            "y": 96
+          },
+          {
+            "frame": 20,
+            "x": 400,
+            "y": 109
+          },
+          {
+            "frame": 21,
+            "x": 394,
+            "y": 124
+          },
+          {
+            "frame": 22,
+            "x": 391,
+            "y": 132
+          },
+          {
+            "frame": 23,
+            "x": 388,
+            "y": 139
+          },
+          {
+            "frame": 24,
+            "x": 385,
+            "y": 147
+          },
+          {
+            "frame": 25,
+            "x": 382,
+            "y": 154
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_026.mp4",
+      "clip_name": "delivery_026.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 18,
+        "trajectory_points": 25
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_027.mp4",
+      "shot": {
+        "prediction": "Lofted",
+        "confidence": 0.427948,
+        "class_probabilities": {
+          "Cover": 0.056217,
+          "Defense": 0.058053,
+          "Flick": 0.074572,
+          "Hook": 0.047708,
+          "Late Cut": 0.0779,
+          "Lofted": 0.427948,
+          "Pull": 0.072843,
+          "Square Cut": 0.069357,
+          "Straight": 0.063927,
+          "Sweep": 0.051473
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 5,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 282,
+            "y": 186
+          },
+          {
+            "frame": 2,
+            "x": 280,
+            "y": 189
+          },
+          {
+            "frame": 3,
+            "x": 278,
+            "y": 183
+          },
+          {
+            "frame": 4,
+            "x": 274,
+            "y": 171
+          },
+          {
+            "frame": 5,
+            "x": 271,
+            "y": 159
+          },
+          {
+            "frame": 6,
+            "x": 270,
+            "y": 152
+          },
+          {
+            "frame": 7,
+            "x": 268,
+            "y": 146
+          },
+          {
+            "frame": 8,
+            "x": 267,
+            "y": 139
+          },
+          {
+            "frame": 9,
+            "x": 265,
+            "y": 133
+          },
+          {
+            "frame": 10,
+            "x": 263,
+            "y": 127
+          },
+          {
+            "frame": 11,
+            "x": 262,
+            "y": 120
+          },
+          {
+            "frame": 12,
+            "x": 260,
+            "y": 114
+          },
+          {
+            "frame": 13,
+            "x": 259,
+            "y": 107
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_027.mp4",
+      "clip_name": "delivery_027.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 5,
+        "trajectory_points": 13
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_028.mp4",
+      "shot": {
+        "prediction": "Hook",
+        "confidence": 0.39253,
+        "class_probabilities": {
+          "Cover": 0.060658,
+          "Defense": 0.065807,
+          "Flick": 0.055434,
+          "Hook": 0.39253,
+          "Late Cut": 0.068105,
+          "Lofted": 0.049207,
+          "Pull": 0.120535,
+          "Square Cut": 0.050707,
+          "Straight": 0.076738,
+          "Sweep": 0.060279
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 10,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 237,
+            "y": 199
+          },
+          {
+            "frame": 2,
+            "x": 237,
+            "y": 199
+          },
+          {
+            "frame": 3,
+            "x": 237,
+            "y": 199
+          },
+          {
+            "frame": 4,
+            "x": 266,
+            "y": 165
+          },
+          {
+            "frame": 5,
+            "x": 257,
+            "y": 188
+          },
+          {
+            "frame": 6,
+            "x": 236,
+            "y": 211
+          },
+          {
+            "frame": 7,
+            "x": 225,
+            "y": 209
+          },
+          {
+            "frame": 8,
+            "x": 224,
+            "y": 191
+          },
+          {
+            "frame": 9,
+            "x": 225,
+            "y": 174
+          },
+          {
+            "frame": 10,
+            "x": 226,
+            "y": 166
+          },
+          {
+            "frame": 11,
+            "x": 252,
+            "y": 181
+          },
+          {
+            "frame": 12,
+            "x": 267,
+            "y": 190
+          },
+          {
+            "frame": 13,
+            "x": 245,
+            "y": 159
+          },
+          {
+            "frame": 14,
+            "x": 217,
+            "y": 124
+          },
+          {
+            "frame": 15,
+            "x": 203,
+            "y": 106
+          },
+          {
+            "frame": 16,
+            "x": 189,
+            "y": 88
+          },
+          {
+            "frame": 17,
+            "x": 175,
+            "y": 70
+          },
+          {
+            "frame": 18,
+            "x": 161,
+            "y": 53
+          },
+          {
+            "frame": 19,
+            "x": 147,
+            "y": 35
+          },
+          {
+            "frame": 20,
+            "x": 133,
+            "y": 17
+          },
+          {
+            "frame": 21,
+            "x": 119,
+            "y": 0
+          },
+          {
+            "frame": 22,
+            "x": 105,
+            "y": -18
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_028.mp4",
+      "clip_name": "delivery_028.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 10,
+        "trajectory_points": 22
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_029.mp4",
+      "shot": {
+        "prediction": "Defense",
+        "confidence": 0.260636,
+        "class_probabilities": {
+          "Cover": 0.106934,
+          "Defense": 0.260636,
+          "Flick": 0.129775,
+          "Hook": 0.064407,
+          "Late Cut": 0.123245,
+          "Lofted": 0.061508,
+          "Pull": 0.053081,
+          "Square Cut": 0.058421,
+          "Straight": 0.076664,
+          "Sweep": 0.065328
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 18,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 249,
+            "y": 137
+          },
+          {
+            "frame": 2,
+            "x": 250,
+            "y": 137
+          },
+          {
+            "frame": 3,
+            "x": 254,
+            "y": 140
+          },
+          {
+            "frame": 4,
+            "x": 257,
+            "y": 145
+          },
+          {
+            "frame": 5,
+            "x": 260,
+            "y": 153
+          },
+          {
+            "frame": 6,
+            "x": 262,
+            "y": 162
+          },
+          {
+            "frame": 7,
+            "x": 264,
+            "y": 173
+          },
+          {
+            "frame": 8,
+            "x": 266,
+            "y": 186
+          },
+          {
+            "frame": 9,
+            "x": 268,
+            "y": 202
+          },
+          {
+            "frame": 10,
+            "x": 271,
+            "y": 208
+          },
+          {
+            "frame": 11,
+            "x": 274,
+            "y": 198
+          },
+          {
+            "frame": 12,
+            "x": 278,
+            "y": 178
+          },
+          {
+            "frame": 13,
+            "x": 282,
+            "y": 157
+          },
+          {
+            "frame": 14,
+            "x": 284,
+            "y": 147
+          },
+          {
+            "frame": 15,
+            "x": 282,
+            "y": 151
+          },
+          {
+            "frame": 16,
+            "x": 261,
+            "y": 137
+          },
+          {
+            "frame": 17,
+            "x": 237,
+            "y": 121
+          },
+          {
+            "frame": 18,
+            "x": 216,
+            "y": 115
+          },
+          {
+            "frame": 19,
+            "x": 200,
+            "y": 115
+          },
+          {
+            "frame": 20,
+            "x": 192,
+            "y": 116
+          },
+          {
+            "frame": 21,
+            "x": 183,
+            "y": 116
+          },
+          {
+            "frame": 22,
+            "x": 175,
+            "y": 117
+          },
+          {
+            "frame": 23,
+            "x": 167,
+            "y": 117
+          },
+          {
+            "frame": 24,
+            "x": 159,
+            "y": 118
+          },
+          {
+            "frame": 25,
+            "x": 151,
+            "y": 118
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_029.mp4",
+      "clip_name": "delivery_029.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 18,
+        "trajectory_points": 25
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_030.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.315534,
+        "class_probabilities": {
+          "Cover": 0.070681,
+          "Defense": 0.081021,
+          "Flick": 0.067881,
+          "Hook": 0.067892,
+          "Late Cut": 0.315534,
+          "Lofted": 0.084774,
+          "Pull": 0.079873,
+          "Square Cut": 0.058836,
+          "Straight": 0.112028,
+          "Sweep": 0.061481
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 12,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 358,
+            "y": 186
+          },
+          {
+            "frame": 2,
+            "x": 356,
+            "y": 194
+          },
+          {
+            "frame": 3,
+            "x": 351,
+            "y": 211
+          },
+          {
+            "frame": 4,
+            "x": 346,
+            "y": 230
+          },
+          {
+            "frame": 5,
+            "x": 342,
+            "y": 229
+          },
+          {
+            "frame": 6,
+            "x": 338,
+            "y": 212
+          },
+          {
+            "frame": 7,
+            "x": 334,
+            "y": 193
+          },
+          {
+            "frame": 8,
+            "x": 330,
+            "y": 178
+          },
+          {
+            "frame": 9,
+            "x": 325,
+            "y": 167
+          },
+          {
+            "frame": 10,
+            "x": 348,
+            "y": 165
+          },
+          {
+            "frame": 11,
+            "x": 399,
+            "y": 171
+          },
+          {
+            "frame": 12,
+            "x": 384,
+            "y": 199
+          },
+          {
+            "frame": 13,
+            "x": 374,
+            "y": 213
+          },
+          {
+            "frame": 14,
+            "x": 363,
+            "y": 228
+          },
+          {
+            "frame": 15,
+            "x": 352,
+            "y": 243
+          },
+          {
+            "frame": 16,
+            "x": 342,
+            "y": 258
+          },
+          {
+            "frame": 17,
+            "x": 331,
+            "y": 272
+          },
+          {
+            "frame": 18,
+            "x": 320,
+            "y": 287
+          },
+          {
+            "frame": 19,
+            "x": 310,
+            "y": 302
+          },
+          {
+            "frame": 20,
+            "x": 299,
+            "y": 316
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_030.mp4",
+      "clip_name": "delivery_030.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 12,
+        "trajectory_points": 20
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_031.mp4",
+      "shot": {
+        "prediction": "Cover",
+        "confidence": 0.253791,
+        "class_probabilities": {
+          "Cover": 0.253791,
+          "Defense": 0.074567,
+          "Flick": 0.07168,
+          "Hook": 0.057415,
+          "Late Cut": 0.082228,
+          "Lofted": 0.090309,
+          "Pull": 0.057859,
+          "Square Cut": 0.080725,
+          "Straight": 0.129634,
+          "Sweep": 0.101793
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 18,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 332,
+            "y": 147
+          },
+          {
+            "frame": 2,
+            "x": 331,
+            "y": 148
+          },
+          {
+            "frame": 3,
+            "x": 330,
+            "y": 153
+          },
+          {
+            "frame": 4,
+            "x": 328,
+            "y": 160
+          },
+          {
+            "frame": 5,
+            "x": 326,
+            "y": 168
+          },
+          {
+            "frame": 6,
+            "x": 326,
+            "y": 172
+          },
+          {
+            "frame": 7,
+            "x": 323,
+            "y": 186
+          },
+          {
+            "frame": 8,
+            "x": 320,
+            "y": 201
+          },
+          {
+            "frame": 9,
+            "x": 317,
+            "y": 216
+          },
+          {
+            "frame": 10,
+            "x": 313,
+            "y": 233
+          },
+          {
+            "frame": 11,
+            "x": 311,
+            "y": 251
+          },
+          {
+            "frame": 12,
+            "x": 308,
+            "y": 268
+          },
+          {
+            "frame": 13,
+            "x": 308,
+            "y": 265
+          },
+          {
+            "frame": 14,
+            "x": 311,
+            "y": 248
+          },
+          {
+            "frame": 15,
+            "x": 315,
+            "y": 229
+          },
+          {
+            "frame": 16,
+            "x": 319,
+            "y": 213
+          },
+          {
+            "frame": 17,
+            "x": 323,
+            "y": 202
+          },
+          {
+            "frame": 18,
+            "x": 334,
+            "y": 209
+          },
+          {
+            "frame": 19,
+            "x": 298,
+            "y": 228
+          },
+          {
+            "frame": 20,
+            "x": 278,
+            "y": 238
+          },
+          {
+            "frame": 21,
+            "x": 257,
+            "y": 248
+          },
+          {
+            "frame": 22,
+            "x": 237,
+            "y": 258
+          },
+          {
+            "frame": 23,
+            "x": 217,
+            "y": 268
+          },
+          {
+            "frame": 24,
+            "x": 197,
+            "y": 278
+          },
+          {
+            "frame": 25,
+            "x": 177,
+            "y": 288
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_031.mp4",
+      "clip_name": "delivery_031.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 18,
+        "trajectory_points": 25
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_032.mp4",
+      "shot": {
+        "prediction": "Lofted",
+        "confidence": 0.162982,
+        "class_probabilities": {
+          "Cover": 0.110122,
+          "Defense": 0.14054,
+          "Flick": 0.0777,
+          "Hook": 0.04456,
+          "Late Cut": 0.064658,
+          "Lofted": 0.162982,
+          "Pull": 0.160595,
+          "Square Cut": 0.085555,
+          "Straight": 0.090893,
+          "Sweep": 0.062396
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 10,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 370,
+            "y": 153
+          },
+          {
+            "frame": 2,
+            "x": 370,
+            "y": 153
+          },
+          {
+            "frame": 3,
+            "x": 364,
+            "y": 160
+          },
+          {
+            "frame": 4,
+            "x": 358,
+            "y": 170
+          },
+          {
+            "frame": 5,
+            "x": 353,
+            "y": 180
+          },
+          {
+            "frame": 6,
+            "x": 349,
+            "y": 190
+          },
+          {
+            "frame": 7,
+            "x": 345,
+            "y": 200
+          },
+          {
+            "frame": 8,
+            "x": 342,
+            "y": 211
+          },
+          {
+            "frame": 9,
+            "x": 338,
+            "y": 206
+          },
+          {
+            "frame": 10,
+            "x": 335,
+            "y": 188
+          },
+          {
+            "frame": 11,
+            "x": 333,
+            "y": 179
+          },
+          {
+            "frame": 12,
+            "x": 331,
+            "y": 169
+          },
+          {
+            "frame": 13,
+            "x": 329,
+            "y": 160
+          },
+          {
+            "frame": 14,
+            "x": 327,
+            "y": 151
+          },
+          {
+            "frame": 15,
+            "x": 339,
+            "y": 103
+          },
+          {
+            "frame": 16,
+            "x": 345,
+            "y": 78
+          },
+          {
+            "frame": 17,
+            "x": 351,
+            "y": 53
+          },
+          {
+            "frame": 18,
+            "x": 357,
+            "y": 27
+          },
+          {
+            "frame": 19,
+            "x": 364,
+            "y": 2
+          },
+          {
+            "frame": 20,
+            "x": 370,
+            "y": -22
+          },
+          {
+            "frame": 21,
+            "x": 376,
+            "y": -48
+          },
+          {
+            "frame": 22,
+            "x": 383,
+            "y": -73
+          },
+          {
+            "frame": 23,
+            "x": 389,
+            "y": -98
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_032.mp4",
+      "clip_name": "delivery_032.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 10,
+        "trajectory_points": 23
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_033.mp4",
+      "shot": {
+        "prediction": "Defense",
+        "confidence": 0.224155,
+        "class_probabilities": {
+          "Cover": 0.07225,
+          "Defense": 0.224155,
+          "Flick": 0.073399,
+          "Hook": 0.040963,
+          "Late Cut": 0.112276,
+          "Lofted": 0.067863,
+          "Pull": 0.055822,
+          "Square Cut": 0.132371,
+          "Straight": 0.069977,
+          "Sweep": 0.150923
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 14,
+        "trajectory": [
+          {
+            "frame": 6,
+            "x": 297,
+            "y": 149
+          },
+          {
+            "frame": 7,
+            "x": 300,
+            "y": 154
+          },
+          {
+            "frame": 8,
+            "x": 305,
+            "y": 163
+          },
+          {
+            "frame": 9,
+            "x": 311,
+            "y": 174
+          },
+          {
+            "frame": 10,
+            "x": 316,
+            "y": 185
+          },
+          {
+            "frame": 11,
+            "x": 322,
+            "y": 199
+          },
+          {
+            "frame": 12,
+            "x": 325,
+            "y": 203
+          },
+          {
+            "frame": 13,
+            "x": 324,
+            "y": 189
+          },
+          {
+            "frame": 14,
+            "x": 322,
+            "y": 168
+          },
+          {
+            "frame": 15,
+            "x": 320,
+            "y": 149
+          },
+          {
+            "frame": 16,
+            "x": 292,
+            "y": 161
+          },
+          {
+            "frame": 17,
+            "x": 270,
+            "y": 181
+          },
+          {
+            "frame": 18,
+            "x": 265,
+            "y": 192
+          },
+          {
+            "frame": 19,
+            "x": 263,
+            "y": 198
+          },
+          {
+            "frame": 20,
+            "x": 262,
+            "y": 203
+          },
+          {
+            "frame": 21,
+            "x": 260,
+            "y": 208
+          },
+          {
+            "frame": 22,
+            "x": 258,
+            "y": 213
+          },
+          {
+            "frame": 23,
+            "x": 256,
+            "y": 219
+          },
+          {
+            "frame": 24,
+            "x": 254,
+            "y": 224
+          },
+          {
+            "frame": 25,
+            "x": 253,
+            "y": 229
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_033.mp4",
+      "clip_name": "delivery_033.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 14,
+        "trajectory_points": 20
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_034.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.198491,
+        "class_probabilities": {
+          "Cover": 0.079569,
+          "Defense": 0.089554,
+          "Flick": 0.104503,
+          "Hook": 0.055151,
+          "Late Cut": 0.198491,
+          "Lofted": 0.178179,
+          "Pull": 0.066677,
+          "Square Cut": 0.057182,
+          "Straight": 0.07175,
+          "Sweep": 0.098946
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 11,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 353,
+            "y": 150
+          },
+          {
+            "frame": 2,
+            "x": 351,
+            "y": 153
+          },
+          {
+            "frame": 3,
+            "x": 347,
+            "y": 160
+          },
+          {
+            "frame": 4,
+            "x": 342,
+            "y": 169
+          },
+          {
+            "frame": 5,
+            "x": 337,
+            "y": 179
+          },
+          {
+            "frame": 6,
+            "x": 333,
+            "y": 190
+          },
+          {
+            "frame": 7,
+            "x": 329,
+            "y": 203
+          },
+          {
+            "frame": 8,
+            "x": 323,
+            "y": 217
+          },
+          {
+            "frame": 9,
+            "x": 318,
+            "y": 223
+          },
+          {
+            "frame": 10,
+            "x": 313,
+            "y": 213
+          },
+          {
+            "frame": 11,
+            "x": 311,
+            "y": 207
+          },
+          {
+            "frame": 12,
+            "x": 312,
+            "y": 194
+          },
+          {
+            "frame": 13,
+            "x": 312,
+            "y": 187
+          },
+          {
+            "frame": 14,
+            "x": 313,
+            "y": 180
+          },
+          {
+            "frame": 15,
+            "x": 313,
+            "y": 173
+          },
+          {
+            "frame": 16,
+            "x": 314,
+            "y": 166
+          },
+          {
+            "frame": 17,
+            "x": 315,
+            "y": 159
+          },
+          {
+            "frame": 18,
+            "x": 315,
+            "y": 152
+          },
+          {
+            "frame": 19,
+            "x": 316,
+            "y": 145
+          },
+          {
+            "frame": 20,
+            "x": 316,
+            "y": 138
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_034.mp4",
+      "clip_name": "delivery_034.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 11,
+        "trajectory_points": 20
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_035.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.37212,
+        "class_probabilities": {
+          "Cover": 0.120218,
+          "Defense": 0.050699,
+          "Flick": 0.066619,
+          "Hook": 0.047391,
+          "Late Cut": 0.37212,
+          "Lofted": 0.052291,
+          "Pull": 0.051447,
+          "Square Cut": 0.046239,
+          "Straight": 0.127947,
+          "Sweep": 0.065028
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 6,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 324,
+            "y": 150
+          },
+          {
+            "frame": 2,
+            "x": 323,
+            "y": 151
+          },
+          {
+            "frame": 3,
+            "x": 322,
+            "y": 153
+          },
+          {
+            "frame": 4,
+            "x": 322,
+            "y": 154
+          },
+          {
+            "frame": 5,
+            "x": 322,
+            "y": 155
+          },
+          {
+            "frame": 6,
+            "x": 321,
+            "y": 156
+          },
+          {
+            "frame": 7,
+            "x": 321,
+            "y": 157
+          },
+          {
+            "frame": 8,
+            "x": 321,
+            "y": 158
+          },
+          {
+            "frame": 9,
+            "x": 320,
+            "y": 159
+          },
+          {
+            "frame": 10,
+            "x": 304,
+            "y": 211
+          },
+          {
+            "frame": 11,
+            "x": 290,
+            "y": 255
+          },
+          {
+            "frame": 12,
+            "x": 284,
+            "y": 275
+          },
+          {
+            "frame": 13,
+            "x": 281,
+            "y": 284
+          },
+          {
+            "frame": 14,
+            "x": 278,
+            "y": 293
+          },
+          {
+            "frame": 15,
+            "x": 275,
+            "y": 301
+          },
+          {
+            "frame": 16,
+            "x": 272,
+            "y": 310
+          },
+          {
+            "frame": 17,
+            "x": 269,
+            "y": 319
+          },
+          {
+            "frame": 18,
+            "x": 267,
+            "y": 328
+          },
+          {
+            "frame": 19,
+            "x": 264,
+            "y": 336
+          },
+          {
+            "frame": 20,
+            "x": 261,
+            "y": 345
+          },
+          {
+            "frame": 23,
+            "x": 299,
+            "y": 313
+          },
+          {
+            "frame": 24,
+            "x": 323,
+            "y": 286
+          },
+          {
+            "frame": 25,
+            "x": 348,
+            "y": 258
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_035.mp4",
+      "clip_name": "delivery_035.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 6,
+        "trajectory_points": 23
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_036.mp4",
+      "shot": {
+        "prediction": "Cover",
+        "confidence": 0.243264,
+        "class_probabilities": {
+          "Cover": 0.243264,
+          "Defense": 0.04993,
+          "Flick": 0.086329,
+          "Hook": 0.043631,
+          "Late Cut": 0.065578,
+          "Lofted": 0.05272,
+          "Pull": 0.050251,
+          "Square Cut": 0.096785,
+          "Straight": 0.090844,
+          "Sweep": 0.220669
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 19,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 336,
+            "y": 144
+          },
+          {
+            "frame": 2,
+            "x": 336,
+            "y": 144
+          },
+          {
+            "frame": 3,
+            "x": 335,
+            "y": 145
+          },
+          {
+            "frame": 4,
+            "x": 334,
+            "y": 148
+          },
+          {
+            "frame": 5,
+            "x": 334,
+            "y": 154
+          },
+          {
+            "frame": 6,
+            "x": 333,
+            "y": 162
+          },
+          {
+            "frame": 7,
+            "x": 332,
+            "y": 172
+          },
+          {
+            "frame": 8,
+            "x": 330,
+            "y": 182
+          },
+          {
+            "frame": 9,
+            "x": 328,
+            "y": 193
+          },
+          {
+            "frame": 10,
+            "x": 325,
+            "y": 206
+          },
+          {
+            "frame": 11,
+            "x": 323,
+            "y": 219
+          },
+          {
+            "frame": 12,
+            "x": 320,
+            "y": 233
+          },
+          {
+            "frame": 13,
+            "x": 316,
+            "y": 248
+          },
+          {
+            "frame": 14,
+            "x": 312,
+            "y": 265
+          },
+          {
+            "frame": 15,
+            "x": 310,
+            "y": 274
+          },
+          {
+            "frame": 16,
+            "x": 310,
+            "y": 272
+          },
+          {
+            "frame": 17,
+            "x": 310,
+            "y": 255
+          },
+          {
+            "frame": 18,
+            "x": 310,
+            "y": 245
+          },
+          {
+            "frame": 19,
+            "x": 311,
+            "y": 236
+          },
+          {
+            "frame": 20,
+            "x": 318,
+            "y": 218
+          },
+          {
+            "frame": 21,
+            "x": 322,
+            "y": 209
+          },
+          {
+            "frame": 22,
+            "x": 326,
+            "y": 200
+          },
+          {
+            "frame": 23,
+            "x": 330,
+            "y": 191
+          },
+          {
+            "frame": 24,
+            "x": 334,
+            "y": 182
+          },
+          {
+            "frame": 25,
+            "x": 338,
+            "y": 173
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_036.mp4",
+      "clip_name": "delivery_036.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 19,
+        "trajectory_points": 25
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_037.mp4",
+      "shot": {
+        "prediction": "Sweep",
+        "confidence": 0.391129,
+        "class_probabilities": {
+          "Cover": 0.062401,
+          "Defense": 0.045829,
+          "Flick": 0.050285,
+          "Hook": 0.063758,
+          "Late Cut": 0.161008,
+          "Lofted": 0.047021,
+          "Pull": 0.078423,
+          "Square Cut": 0.039891,
+          "Straight": 0.060253,
+          "Sweep": 0.391129
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 8,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 331,
+            "y": 154
+          },
+          {
+            "frame": 2,
+            "x": 331,
+            "y": 154
+          },
+          {
+            "frame": 3,
+            "x": 331,
+            "y": 155
+          },
+          {
+            "frame": 4,
+            "x": 331,
+            "y": 155
+          },
+          {
+            "frame": 5,
+            "x": 331,
+            "y": 155
+          },
+          {
+            "frame": 6,
+            "x": 331,
+            "y": 156
+          },
+          {
+            "frame": 7,
+            "x": 331,
+            "y": 156
+          },
+          {
+            "frame": 8,
+            "x": 331,
+            "y": 156
+          },
+          {
+            "frame": 9,
+            "x": 331,
+            "y": 157
+          },
+          {
+            "frame": 10,
+            "x": 331,
+            "y": 157
+          },
+          {
+            "frame": 12,
+            "x": 320,
+            "y": 204
+          },
+          {
+            "frame": 13,
+            "x": 314,
+            "y": 229
+          },
+          {
+            "frame": 14,
+            "x": 307,
+            "y": 266
+          },
+          {
+            "frame": 15,
+            "x": 304,
+            "y": 285
+          },
+          {
+            "frame": 16,
+            "x": 306,
+            "y": 281
+          },
+          {
+            "frame": 17,
+            "x": 307,
+            "y": 279
+          },
+          {
+            "frame": 18,
+            "x": 308,
+            "y": 276
+          },
+          {
+            "frame": 19,
+            "x": 310,
+            "y": 273
+          },
+          {
+            "frame": 20,
+            "x": 311,
+            "y": 271
+          },
+          {
+            "frame": 21,
+            "x": 371,
+            "y": 243
+          },
+          {
+            "frame": 22,
+            "x": 415,
+            "y": 225
+          },
+          {
+            "frame": 23,
+            "x": 435,
+            "y": 217
+          },
+          {
+            "frame": 24,
+            "x": 456,
+            "y": 208
+          },
+          {
+            "frame": 25,
+            "x": 477,
+            "y": 200
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_037.mp4",
+      "clip_name": "delivery_037.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 8,
+        "trajectory_points": 24
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_038.mp4",
+      "shot": {
+        "prediction": "Flick",
+        "confidence": 0.56081,
+        "class_probabilities": {
+          "Cover": 0.054012,
+          "Defense": 0.038849,
+          "Flick": 0.56081,
+          "Hook": 0.053472,
+          "Late Cut": 0.073264,
+          "Lofted": 0.033849,
+          "Pull": 0.040456,
+          "Square Cut": 0.050009,
+          "Straight": 0.057257,
+          "Sweep": 0.038023
+        }
+      },
+      "ball": {
+        "tracking_success": true,
+        "message": "Ball detected and tracked.",
+        "frames_processed": 25,
+        "detections": 8,
+        "trajectory": [
+          {
+            "frame": 1,
+            "x": 268,
+            "y": 191
+          },
+          {
+            "frame": 2,
+            "x": 269,
+            "y": 200
+          },
+          {
+            "frame": 3,
+            "x": 275,
+            "y": 220
+          },
+          {
+            "frame": 4,
+            "x": 282,
+            "y": 242
+          },
+          {
+            "frame": 5,
+            "x": 288,
+            "y": 255
+          },
+          {
+            "frame": 6,
+            "x": 294,
+            "y": 249
+          },
+          {
+            "frame": 7,
+            "x": 297,
+            "y": 245
+          },
+          {
+            "frame": 8,
+            "x": 304,
+            "y": 221
+          },
+          {
+            "frame": 9,
+            "x": 308,
+            "y": 208
+          },
+          {
+            "frame": 10,
+            "x": 308,
+            "y": 214
+          },
+          {
+            "frame": 11,
+            "x": 307,
+            "y": 219
+          },
+          {
+            "frame": 12,
+            "x": 307,
+            "y": 224
+          },
+          {
+            "frame": 13,
+            "x": 306,
+            "y": 229
+          },
+          {
+            "frame": 14,
+            "x": 306,
+            "y": 233
+          },
+          {
+            "frame": 15,
+            "x": 305,
+            "y": 238
+          },
+          {
+            "frame": 16,
+            "x": 304,
+            "y": 243
+          },
+          {
+            "frame": 17,
+            "x": 304,
+            "y": 248
+          },
+          {
+            "frame": 18,
+            "x": 303,
+            "y": 252
+          }
+        ]
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_038.mp4",
+      "clip_name": "delivery_038.mp4",
+      "tracking_summary": {
+        "success": true,
+        "frames_processed": 25,
+        "detections": 8,
+        "trajectory_points": 18
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_039.mp4",
+      "shot": {
+        "prediction": "Lofted",
+        "confidence": 0.367529,
+        "class_probabilities": {
+          "Cover": 0.069799,
+          "Defense": 0.080277,
+          "Flick": 0.073622,
+          "Hook": 0.04138,
+          "Late Cut": 0.049776,
+          "Lofted": 0.367529,
+          "Pull": 0.065833,
+          "Square Cut": 0.072916,
+          "Straight": 0.129895,
+          "Sweep": 0.048971
+        }
+      },
+      "ball": {
+        "tracking_success": false,
+        "message": "No usable ball trajectory was detected.",
+        "frames_processed": 25,
+        "detections": 0,
+        "trajectory": []
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_039.mp4",
+      "clip_name": "delivery_039.mp4",
+      "tracking_summary": {
+        "success": false,
+        "frames_processed": 25,
+        "detections": 0,
+        "trajectory_points": 0
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_040.mp4",
+      "shot": {
+        "prediction": "Late Cut",
+        "confidence": 0.233552,
+        "class_probabilities": {
+          "Cover": 0.067543,
+          "Defense": 0.072198,
+          "Flick": 0.073399,
+          "Hook": 0.128988,
+          "Late Cut": 0.233552,
+          "Lofted": 0.0656,
+          "Pull": 0.153201,
+          "Square Cut": 0.068936,
+          "Straight": 0.076598,
+          "Sweep": 0.059984
+        }
+      },
+      "ball": {
+        "tracking_success": false,
+        "message": "No usable ball trajectory was detected.",
+        "frames_processed": 25,
+        "detections": 0,
+        "trajectory": []
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_040.mp4",
+      "clip_name": "delivery_040.mp4",
+      "tracking_summary": {
+        "success": false,
+        "frames_processed": 25,
+        "detections": 0,
+        "trajectory_points": 0
+      }
+    },
+    {
+      "delivery": null,
+      "clip": "delivery_041.mp4",
+      "shot": {
+        "prediction": "Lofted",
+        "confidence": 0.531478,
+        "class_probabilities": {
+          "Cover": 0.051515,
+          "Defense": 0.054015,
+          "Flick": 0.090395,
+          "Hook": 0.030376,
+          "Late Cut": 0.032994,
+          "Lofted": 0.531478,
+          "Pull": 0.059291,
+          "Square Cut": 0.051067,
+          "Straight": 0.056386,
+          "Sweep": 0.042482
+        }
+      },
+      "ball": {
+        "tracking_success": false,
+        "message": "No usable ball trajectory was detected.",
+        "frames_processed": 25,
+        "detections": 0,
+        "trajectory": []
+      },
+      "clip_path": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips\\delivery_041.mp4",
+      "clip_name": "delivery_041.mp4",
+      "tracking_summary": {
+        "success": false,
+        "frames_processed": 25,
+        "detections": 0,
+        "trajectory_points": 0
+      }
+    }
+  ]
+}

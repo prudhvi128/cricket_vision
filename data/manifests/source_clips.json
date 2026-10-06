@@ -1,0 +1,431 @@
+{
+  "name": "source_clips",
+  "description": "41 delivery clips from one full stadium match, with per-clip shot labels and ball-tracking outcomes from the upstream 'Cricket Match Pipeline' run. Approved as the evaluation set for segmentation and shot classification.",
+  "provenance": {
+    "upstream_project": "Cricket Match Pipeline",
+    "upstream_version": "1.0",
+    "upstream_source_video": "C:\\Users\\mamid\\OneDrive\\Desktop\\matches\\long_match.mp4",
+    "upstream_clips_directory": "C:\\Users\\mamid\\OneDrive\\Desktop\\Cricket\\backend\\full_match_output\\delivery_clips",
+    "labels_are": "upstream model output, NOT human annotation. Usable as a regression and consistency check; not a ground-truth accuracy figure.",
+    "note": "The absolute paths above record where the clips came from and are not valid on this machine. Nothing in the code reads them."
+  },
+  "counts": {
+    "clips": 41,
+    "upstream_results": 41,
+    "upstream_completed": 41,
+    "upstream_tracking_success": 36,
+    "upstream_tracking_failures": 5
+  },
+  "clips": [
+    {
+      "file": "delivery_001.mp4",
+      "bytes": 246368,
+      "sha256": "4a40159848fe42630db238c5bdfcc5c8cf51dc5249f36ee296fed25836ca8db6",
+      "upstream": {
+        "shot_prediction": "Square Cut",
+        "shot_confidence": 0.289789,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_002.mp4",
+      "bytes": 268187,
+      "sha256": "4bccfd4b7bf00779a97c54318b3f6edc4d9e612d27c3d90383b42763dfb02b5d",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.211519,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_003.mp4",
+      "bytes": 395439,
+      "sha256": "e77b6f1fb8bfd958205d470eb6de76103f918b5ec3113481fec52160f85f3591",
+      "upstream": {
+        "shot_prediction": "Lofted",
+        "shot_confidence": 0.343465,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_004.mp4",
+      "bytes": 269737,
+      "sha256": "67d903679d37c9b79f7d52cd0d5c3d3b695daa5ceae606547e2cedbb1eb63c86",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.406156,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_005.mp4",
+      "bytes": 270596,
+      "sha256": "4fde7b66821c9a72095f622d3c40a46034763138882ad452677503bdfe1fad20",
+      "upstream": {
+        "shot_prediction": "Sweep",
+        "shot_confidence": 0.20315,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_006.mp4",
+      "bytes": 244295,
+      "sha256": "bc272735d461491b15518fe8c519dcdd2d0c554f7f789d79b4bfbcf2ee807d3f",
+      "upstream": {
+        "shot_prediction": "Lofted",
+        "shot_confidence": 0.204701,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_007.mp4",
+      "bytes": 244526,
+      "sha256": "62c005942ba3a2b47787d45dd164ea70a763cb101d96788edbb3dfce14982939",
+      "upstream": {
+        "shot_prediction": "Square Cut",
+        "shot_confidence": 0.490637,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_008.mp4",
+      "bytes": 297292,
+      "sha256": "46f35918ef01f371f836a5cda74da1b5d8545831e8512fbc7eca05a47239150b",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.302951,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_009.mp4",
+      "bytes": 250860,
+      "sha256": "0a9f504fe43142efe1f25735c1665b7619ce9526c3f0ced8a1934e5b44b71815",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.331003,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_010.mp4",
+      "bytes": 252289,
+      "sha256": "1c2e881d5e18110bcf207789f192cb4b4a56d312aed2c99b3efd93939e1bba9a",
+      "upstream": {
+        "shot_prediction": "Sweep",
+        "shot_confidence": 0.32546,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_011.mp4",
+      "bytes": 259649,
+      "sha256": "d66178c22a95c55ec5cde6714538494c945d869cd7c304c926ecb182da18253c",
+      "upstream": {
+        "shot_prediction": "Hook",
+        "shot_confidence": 0.197186,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_012.mp4",
+      "bytes": 261613,
+      "sha256": "99f4986f6c709f035eff3826929341b71e952e3e8af6d238a5456bb473ecaf22",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.383966,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_013.mp4",
+      "bytes": 291162,
+      "sha256": "a561a93315ce1c3717fe5a1551480053c2552b0e1f5917f131ff23b67de7b571",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.398921,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_014.mp4",
+      "bytes": 186433,
+      "sha256": "4b96a738aa7ea4aebe89af3c4f3aba6b2f16aad214520cc94068d03fa2272668",
+      "upstream": {
+        "shot_prediction": "Cover",
+        "shot_confidence": 0.391533,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_015.mp4",
+      "bytes": 235166,
+      "sha256": "e397feff0a88e3692dba5e040a0569078b0a94ed2fc6bd002040d77583bd7009",
+      "upstream": {
+        "shot_prediction": "Flick",
+        "shot_confidence": 0.359163,
+        "tracking_success": false
+      }
+    },
+    {
+      "file": "delivery_016.mp4",
+      "bytes": 288259,
+      "sha256": "7085dc246d2c7fc826f6df9e40cc67eb35cfcdf505617b033c2def08db30d19c",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.40215,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_017.mp4",
+      "bytes": 224476,
+      "sha256": "ae14c8653eceb36451f727f68ab0a46e11c53fdab43fe4b7b7c1b107a44a5da7",
+      "upstream": {
+        "shot_prediction": "Cover",
+        "shot_confidence": 0.279072,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_018.mp4",
+      "bytes": 255345,
+      "sha256": "2a8bd4b7ee3737e6ee321db74f47c2a333fa2b84533e3a23f4f7d2c7f5e98dde",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.176634,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_019.mp4",
+      "bytes": 294616,
+      "sha256": "2b3944b94c04b49e444c6692ff3f222f0b078c69ab95ba1b48cb7aa2f6dcede0",
+      "upstream": {
+        "shot_prediction": "Straight",
+        "shot_confidence": 0.428021,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_020.mp4",
+      "bytes": 259167,
+      "sha256": "61e37cceb43450266e71b4381495aa379b0e0b985ba831f04e3dda24fe3fabca",
+      "upstream": {
+        "shot_prediction": "Pull",
+        "shot_confidence": 0.519639,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_021.mp4",
+      "bytes": 271598,
+      "sha256": "d32743c7de11ec7dbc664e3cf98a1ac9e1b6cb8e0a6913367cc0be8c523545f1",
+      "upstream": {
+        "shot_prediction": "Hook",
+        "shot_confidence": 0.351914,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_022.mp4",
+      "bytes": 263365,
+      "sha256": "96be629c90e974548c68129318a861c92cb82ddd45e3ace257d9107638204f71",
+      "upstream": {
+        "shot_prediction": "Straight",
+        "shot_confidence": 0.27571,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_023.mp4",
+      "bytes": 189661,
+      "sha256": "4772e943f321ea1222f7cafd904a029b25da894b3250ce0fbea81105031d9e11",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.345392,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_024.mp4",
+      "bytes": 283113,
+      "sha256": "36212f256a5bbbc447160dfc78d4c131c3687dcefc730d890ebedd222f0848ec",
+      "upstream": {
+        "shot_prediction": "Pull",
+        "shot_confidence": 0.320524,
+        "tracking_success": false
+      }
+    },
+    {
+      "file": "delivery_025.mp4",
+      "bytes": 215712,
+      "sha256": "53bd9fd072462717475313bf31cebd2b86d4f16b7fd9908422874c624fb0a52f",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.363374,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_026.mp4",
+      "bytes": 228557,
+      "sha256": "9786c600c4d410a0fd61a40cef9bed2ca05dc3efc335bec6f6eb07af66f72cb1",
+      "upstream": {
+        "shot_prediction": "Cover",
+        "shot_confidence": 0.235039,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_027.mp4",
+      "bytes": 297803,
+      "sha256": "d6d330624d353060eb02af076734bb1696ed05d1b3a6b948aa23c059401a6a2e",
+      "upstream": {
+        "shot_prediction": "Lofted",
+        "shot_confidence": 0.427948,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_028.mp4",
+      "bytes": 246183,
+      "sha256": "752ca5a04eda56150caec7fca4a1507f26b1b69317518df71698cec049a6d565",
+      "upstream": {
+        "shot_prediction": "Hook",
+        "shot_confidence": 0.39253,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_029.mp4",
+      "bytes": 218967,
+      "sha256": "2a9e71520893569cff8c32ea9d7bcacbb012b40c8efcfb2b03b61f73bc5eb239",
+      "upstream": {
+        "shot_prediction": "Defense",
+        "shot_confidence": 0.260636,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_030.mp4",
+      "bytes": 246357,
+      "sha256": "6f90a9defad202457895779c024e92ec747add88aa12c3bf3caec932412177cd",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.315534,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_031.mp4",
+      "bytes": 225787,
+      "sha256": "fb6a284ad3d916bd52bcb5b40d036051bf30e380a8ccde0e5ea72b40667f3ccd",
+      "upstream": {
+        "shot_prediction": "Cover",
+        "shot_confidence": 0.253791,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_032.mp4",
+      "bytes": 240703,
+      "sha256": "3f97bab45dcdd33a501054a0bbb48ea8758cf3a878f875259a39d2a1d80fc36a",
+      "upstream": {
+        "shot_prediction": "Lofted",
+        "shot_confidence": 0.162982,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_033.mp4",
+      "bytes": 258725,
+      "sha256": "325a7a3d12912df83af7a0f64efdc7d66dd4422442c0a3a9c06204dfc66d4e49",
+      "upstream": {
+        "shot_prediction": "Defense",
+        "shot_confidence": 0.224155,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_034.mp4",
+      "bytes": 230761,
+      "sha256": "2f6694544a284fa229a80871a41ba9a920237dd0e7993882c4bafe56f3e99903",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.198491,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_035.mp4",
+      "bytes": 241970,
+      "sha256": "7e4850bd5dee928fc72f44201e8c2552a32f13e7cf289b648090a64b8a9e7d8e",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.37212,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_036.mp4",
+      "bytes": 225284,
+      "sha256": "761b9ecf5f9771635d4de9d3e294fbf11be2106ef668b9113313990eead29c9d",
+      "upstream": {
+        "shot_prediction": "Cover",
+        "shot_confidence": 0.243264,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_037.mp4",
+      "bytes": 210379,
+      "sha256": "bf0eedc2cc9081b251fd554c287d5eef9696c3f5c15d864527f629b01e1cd4f8",
+      "upstream": {
+        "shot_prediction": "Sweep",
+        "shot_confidence": 0.391129,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_038.mp4",
+      "bytes": 213142,
+      "sha256": "4572620fc4476dc164c7b2616c29330ba80092150c97311d3ef5776baef81cc8",
+      "upstream": {
+        "shot_prediction": "Flick",
+        "shot_confidence": 0.56081,
+        "tracking_success": true
+      }
+    },
+    {
+      "file": "delivery_039.mp4",
+      "bytes": 301071,
+      "sha256": "f7f76cf7200c7248decd41645ca360c9176eb32e75b7631a51a5ccc5b7f6dd21",
+      "upstream": {
+        "shot_prediction": "Lofted",
+        "shot_confidence": 0.367529,
+        "tracking_success": false
+      }
+    },
+    {
+      "file": "delivery_040.mp4",
+      "bytes": 288883,
+      "sha256": "dabe22812151e4f409eb9f4a1d9e96996f9b8db8bbec67057d9bff02f2049664",
+      "upstream": {
+        "shot_prediction": "Late Cut",
+        "shot_confidence": 0.233552,
+        "tracking_success": false
+      }
+    },
+    {
+      "file": "delivery_041.mp4",
+      "bytes": 187515,
+      "sha256": "002eee45b9700e5dd8adc912ff6e8db23da0c7f95578627c8ea6e2bfc9d24bab",
+      "upstream": {
+        "shot_prediction": "Lofted",
+        "shot_confidence": 0.531478,
+        "tracking_success": false
+      }
+    }
+  ]
+}

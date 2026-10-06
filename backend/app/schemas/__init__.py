@@ -1,0 +1,1 @@
+"""schemas — persisted record definitions."""
