@@ -24,26 +24,36 @@ is the serializer between it and the API:
             ↓
     serialize_result_document()  ← this module
             ↓
-    CLEAN FRONTEND JSON  (a flat ARRAY of deliveries)
+    CLEAN FRONTEND JSON  (one envelope, not the diagnostic document)
 
 Nothing here computes, repairs or invents a measurement. It renames, selects and
 drops. A value that does not exist internally comes out as `null`, never as an
 estimate: `speed_kmh: null` is a fact about the run, a filled-in number would be
 a lie.
 
-THE RESPONSE IS AN ARRAY
-------------------------
-    [ delivery_1, delivery_2, delivery_3, ... ]
+THE RESPONSE IS ONE ENVELOPE
+----------------------------
+    {
+      "analysis_id": "f24b6eb0f6184ac2",
+      "status": "completed",
+      "pitch":     { ... the calibration in effect for this analysis ... },
+      "deliveries": [ delivery_1, delivery_2, ... ]
+    }
 
 so a client does `deliveries[currentIndex]` for Previous/Next navigation and
 gets the video, trajectory, bounce, bowling analytics, shot and quality state of
 THAT delivery in one object. No client ever has to reassemble a delivery from
-two internal documents.
+two internal documents. `analysis_id` and `status` identify what is being shown;
+`pitch` repeats the calibration of the LAST delivery that had one, so a header or
+overlay can show the state of the analysis without walking the list.
 
 KEY MAPPING (internal → frontend)
 ---------------------------------
     clip_path, clip.file_name      → dropped   (filesystem)
-    clip.url / clip_url            → video.clip_url   (API/static URL only)
+    clip.url / clip_url            → video.clip_url   (/api/analysis/{id}/clips/
+                                      {name}, rebuilt here; the static mount is
+                                      gone, so a stored /data/... url is a
+                                      filename hint, never served as-is)
     clip.start_frame/end_frame/…   → video.start_frame/end_frame/fps/…
     trajectory.points[].original_frame → trajectory.points[].frame  (source timebase)
     trajectory.points[].clip_frame     → dropped   (derivable: frame - start + 1)
@@ -54,8 +64,15 @@ KEY MAPPING (internal → frontend)
                                     geometry calibration flag)
     shot.type                      → shot.classification
     quality.* + validation.*       → quality.{trajectory_valid, tracking_confidence,
-                                    requires_human_review, flags}   (verbose
-                                    validation collapsed into concise flags)
+                                     requires_human_review, flags}   (verbose
+                                     validation collapsed into concise flags)
+    delivery.pitch.*               → pitch.{state, detected, calibrated, confidence,
+                                     using_previous_calibration, keypoints, corners,
+                                     center, homography_available} — the optional
+                                     Roboflow pitch calibration in source pixels.
+                                     The stored homography is applied ONCE, into
+                                     trajectory.points[].pitch_position (0..1 on
+                                     the pitch), and never sent to the client.
 
 Model-independent: everything is driven by `dict.get`, so it works on the
 persisted document of any pipeline version, on disk or in memory.
@@ -63,6 +80,7 @@ persisted document of any pipeline version, on disk or in memory.
 
 from __future__ import annotations
 
+import math
 from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -107,6 +125,11 @@ class TrajectoryPointOut(_FrontendModel):
     `source` is never dropped: `detected` is a real detector measurement,
     `predicted` is a Kalman prediction. The distinction is the honesty of the
     whole trajectory, so it travels with every point.
+
+    `pitch_position` places the same point on the PITCH (0..1 across the quad
+    the pitch model found), for a client drawing a top-down pitch map. It is
+    null whenever no calibration with a homography was in effect — a missing
+    position is a fact, not a zero.
     """
 
     frame: int
@@ -114,6 +137,15 @@ class TrajectoryPointOut(_FrontendModel):
     y: int
     source: str
     confidence: Optional[float] = None
+    pitch_position: Optional["PitchPositionOut"] = None
+
+
+class PitchPositionOut(_FrontendModel):
+    """Normalised ball position on the detected pitch quad."""
+
+    x: float
+    y: float
+    inside_pitch: bool
 
 
 class TrajectoryOut(_FrontendModel):
@@ -184,17 +216,88 @@ class QualityOut(_FrontendModel):
     flags: list[str]
 
 
+class PitchOrientationOut(_FrontendModel):
+    """
+    Which end of the detected quad the batter stands at.
+
+    The raw homography says "this is where the ball was as a fraction of the
+    quad"; it says nothing about which end of that quad is the batting end, and
+    a client that draws a top-down pitch without it can put a ball at the wrong
+    end of the pitch — contradicting the very length label sitting next to it.
+    So the orientation the analytics used is served alongside the points.
+
+    `axis` is which unit-square axis runs along the pitch (`"u"` across the
+    frame's width, `"v"` down it), `batting_end` is where the batter is along
+    that axis (0.0 or 1.0), and `travel_delta` is how far the ball actually
+    travelled along it — the evidence behind the choice. Null when no quad
+    could be oriented, which is why a pitch map may legitimately show nothing.
+    """
+
+    axis: str
+    batting_end: float
+    travel_delta: Optional[float] = None
+    calibration_frame: Optional[int] = None
+
+
+class PitchOut(_FrontendModel):
+    """
+    Pitch keypoint calibration for this delivery, in SOURCE pixels.
+
+    Every key is present on every delivery, so a client reads `pitch.detected`
+    without having to test for the block first.
+
+    The four states a client should switch on:
+
+        state == "calibrated"          fresh detection → draw the pitch
+        state == "temporary_loss"      detections failed briefly → draw the LAST
+                                       known pitch, labelled as previous
+        state == "no_calibration"      nothing found yet → draw nothing
+        state == "calibration_expired" too old to trust → draw nothing
+
+    `keypoints` and `corners` are `{"name": [x, y]}` in source pixels; `corners`
+    is empty when fewer than four keypoints survived validation, because three
+    keypoints cannot describe a rectangle and the fourth corner must never be
+    invented. `confidence` is the model's own, not a derived number.
+    """
+
+    state: str = "no_calibration"
+    detected: bool = False
+    calibrated: bool = False
+    confidence: Optional[float] = None
+    using_previous_calibration: bool = False
+    keypoints: dict[str, list[float]] = {}
+    corners: dict[str, list[float]] = {}
+    center: Optional[list[float]] = None
+    homography_available: bool = False
+    orientation: Optional[PitchOrientationOut] = None
+
+
 class DeliveryOut(_FrontendModel):
     """One delivery, complete and self-contained. Previous/Next swaps this."""
 
-    delivery_id: int
-    delivery_ref: str
+    id: int
     video: VideoOut
     trajectory: TrajectoryOut
     bounce: BounceOut
     bowling: BowlingOut
     shot: ShotOut
     quality: QualityOut
+    pitch: PitchOut = PitchOut()
+
+
+class ResultDocument(_FrontendModel):
+    """
+    `GET /api/analysis/{analysis_id}/result` — the whole contract in one object.
+
+    `pitch` is the calibration of the last delivery that had a real pitch block
+    (or the empty default when none did), so a client shows the analysis-level
+    state without scanning every delivery.
+    """
+
+    analysis_id: str
+    status: str = "completed"
+    pitch: PitchOut = PitchOut()
+    deliveries: list[DeliveryOut]
 
 
 # ── Serialization ─────────────────────────────────────────────────────────────
@@ -211,30 +314,43 @@ def serialize_delivery(delivery: dict, *, analysis_id: str) -> DeliveryOut:
     quality = delivery.get("quality") or {}
     validation = delivery.get("validation")
     points = (delivery.get("trajectory") or {}).get("points") or []
+    pitch = _pitch(delivery)
 
     return DeliveryOut(
-        delivery_id=delivery_id,
-        delivery_ref=delivery.get("delivery_ref") or f"delivery_{delivery_id:03d}",
+        id=delivery_id,
         video=_video(delivery, clip, analysis_id),
         trajectory=_trajectory(delivery, points),
         bounce=_bounce(delivery),
         bowling=_bowling(delivery),
         shot=_shot(delivery),
         quality=_quality(quality, validation, delivery, points),
+        pitch=pitch,
     )
 
 
-def serialize_result_document(doc: dict) -> list[DeliveryOut]:
+def serialize_result_document(doc: dict) -> ResultDocument:
     """
-    The whole result document as the array the frontend iterates.
+    The whole result document as the envelope the frontend renders.
 
-    Order is the document's order (delivery id order), so
-    `deliveries[currentIndex ± 1]` is Previous/Next.
+    Delivery order is the document's order (delivery id order), so
+    `deliveries[currentIndex ± 1]` is Previous/Next. The analysis-level `pitch`
+    is the last delivery's block, because calibration state only moves forward.
     """
-    return [
-        serialize_delivery(d, analysis_id=str(doc.get("analysis_id") or ""))
+    analysis_id = str(doc.get("analysis_id") or "")
+    deliveries = [
+        serialize_delivery(d, analysis_id=analysis_id)
         for d in doc.get("deliveries") or []
     ]
+    pitch = PitchOut()
+    for d in reversed(deliveries):
+        if d.pitch.detected or d.pitch.state != "no_calibration":
+            pitch = d.pitch
+            break
+    return ResultDocument(
+        analysis_id=analysis_id,
+        pitch=pitch,
+        deliveries=deliveries,
+    )
 
 
 # ── Field groups ──────────────────────────────────────────────────────────────
@@ -258,30 +374,35 @@ def _video(delivery: dict, clip: dict, analysis_id: str) -> VideoOut:
 
 def _clip_url(delivery: dict, clip: dict, analysis_id: str) -> Optional[str]:
     """
-    A URL a browser can fetch, or null. Never a path.
+    The clips route for this delivery, or null. Never a path.
 
-    The stored `clip_url` is normally `/data/runs/<id>/clips/delivery_001.mp4`
-    (the static mount). Anything that looks like a filesystem path — which is
-    what `clip_path` holds, and what a stale record might hold in `clip_url` —
-    is replaced by the stable API route for the same bytes, which needs no
-    static mount and cannot leak where the file lives.
+    The stored value (`/data/runs/<id>/clips/delivery_001.mp4`, or a bare
+    filename on an older record) says WHERE the bytes are, which is internal —
+    so only its basename is kept and it is reissued as the one public route that
+    serves those bytes. A record with no clip at all gets null rather than a URL
+    that would 404.
     """
-    stored = delivery.get("clip_url") or clip.get("url")
-    if isinstance(stored, str) and stored and _is_url(stored):
-        return stored
-    if delivery.get("clip") is not None or delivery.get("clip_path"):
-        did = delivery.get("delivery_id")
-        if analysis_id and did is not None:
-            return f"/api/analysis/{analysis_id}/deliveries/{did}/clip"
-    return None
+    if delivery.get("clip") is None and not delivery.get("clip_path") and not delivery.get("clip_url"):
+        return None
+    if not analysis_id:
+        return None
+    return f"/api/analysis/{analysis_id}/clips/{_clip_name(delivery, clip)}"
 
 
-def _is_url(value: str) -> bool:
-    return value.startswith(("/", "http://", "https://")) and "\\" not in value
+def _clip_name(delivery: dict, clip: dict) -> str:
+    """The clip's filename, or the id-derived name when a record omits it."""
+    for candidate in (delivery.get("clip_url"), clip.get("url"), clip.get("file_name")):
+        if not isinstance(candidate, str) or not candidate:
+            continue
+        name = candidate.replace("\\", "/").rsplit("/", 1)[-1]
+        if name.startswith("delivery_") and name.endswith(".mp4"):
+            return name
+    return f"delivery_{int(delivery.get('delivery_id') or 0):03d}.mp4"
 
 
 def _trajectory(delivery: dict, points: list) -> TrajectoryOut:
     traj = delivery.get("trajectory") or {}
+    homography = (delivery.get("pitch") or {}).get("homography")
     clean: list[TrajectoryPointOut] = []
     for p in points:
         if not isinstance(p, dict):
@@ -303,6 +424,7 @@ def _trajectory(delivery: dict, points: list) -> TrajectoryOut:
                 y=y,
                 source=str(p.get("source") or ""),
                 confidence=_float(p.get("confidence")),
+                pitch_position=_pitch_position(x, y, homography),
             )
         )
     detected = sum(1 for p in clean if p.source == "detected")
@@ -315,6 +437,113 @@ def _trajectory(delivery: dict, points: list) -> TrajectoryOut:
         predicted_points=predicted,
         continuity=str(traj.get("continuity") or "continuous"),
     )
+
+
+def _pitch(delivery: dict) -> PitchOut:
+    """
+    The pitch block, projected onto the frontend schema.
+
+    Only the fields a client draws are kept: `model_id`, `image_size`, the
+    calibration frame and the raw homography stay internal — the homography is
+    applied once, here, into `pitch_position` on every trajectory point.
+    """
+    p = delivery.get("pitch")
+    if not isinstance(p, dict):
+        # A record written before this feature existed, or a run with no API
+        # key: the honest empty state, with every key still present.
+        return PitchOut()
+    orientation = p.get("orientation") if isinstance(p.get("orientation"), dict) else None
+    return PitchOut(
+        state=str(p.get("state") or "no_calibration"),
+        detected=bool(p.get("detected")),
+        calibrated=bool(p.get("calibrated")),
+        confidence=_float(p.get("confidence")),
+        using_previous_calibration=bool(p.get("using_previous_calibration")),
+        keypoints=_pairs(p.get("keypoints")),
+        corners=_pairs(p.get("corners")),
+        center=_pair(p.get("center")),
+        # Derived from the matrix itself, not from a flag: a client must never
+        # be told a transform exists while `pitch_position` is null on every
+        # point because the stored one was unusable.
+        homography_available=_matrix3(p.get("homography")) is not None,
+        orientation=(
+            PitchOrientationOut(
+                axis=str(orientation.get("axis")),
+                batting_end=float(orientation.get("batting_end")),
+                travel_delta=_float(orientation.get("travel_delta")),
+                calibration_frame=_int(orientation.get("calibration_frame")),
+            )
+            if orientation is not None and orientation.get("axis") is not None
+            else None
+        ),
+    )
+
+
+def _pitch_position(
+    x: Any, y: Any, homography: Any
+) -> Optional[PitchPositionOut]:
+    """
+    Source pixel → normalised pitch coordinate through the stored homography.
+
+    Not a new measurement: the matrix comes from the record, so the position a
+    client draws can never disagree with the calibration that produced it. Null
+    when there is no matrix — a three-keypoint detection defines no transform,
+    and a position computed from one that does not exist would be a fabrication.
+    """
+    px, py = _float(x), _float(y)
+    if px is None or py is None:
+        return None
+    h = _matrix3(homography)
+    if h is None:
+        return None
+    denom = h[2][0] * px + h[2][1] * py + h[2][2]
+    if not math.isfinite(denom) or abs(denom) < 1e-9:
+        return None
+    u = (h[0][0] * px + h[0][1] * py + h[0][2]) / denom
+    v = (h[1][0] * px + h[1][1] * py + h[1][2]) / denom
+    if not (math.isfinite(u) and math.isfinite(v)):
+        return None
+    return PitchPositionOut(
+        x=round(u, 4),
+        y=round(v, 4),
+        inside_pitch=(-1e-6 <= u <= 1 + 1e-6 and -1e-6 <= v <= 1 + 1e-6),
+    )
+
+
+def _matrix3(value: Any) -> Optional[list[list[float]]]:
+    """A 3x3 matrix of finite numbers, or None."""
+    if not isinstance(value, (list, tuple)) or len(value) != 3:
+        return None
+    rows: list[list[float]] = []
+    for row in value:
+        if not isinstance(row, (list, tuple)) or len(row) != 3:
+            return None
+        numbers = [_float(v) for v in row]
+        if any(v is None or not math.isfinite(v) for v in numbers):
+            return None
+        rows.append(numbers)  # type: ignore[arg-type]
+    return rows
+
+
+def _pairs(value: Any) -> dict[str, list[float]]:
+    """`{"name": [x, y]}`, dropping anything unreadable."""
+    if not isinstance(value, dict):
+        return {}
+    out: dict[str, list[float]] = {}
+    for key, raw in value.items():
+        pair = _pair(raw)
+        if pair is not None:
+            out[str(key)] = pair
+    return out
+
+
+def _pair(value: Any) -> Optional[list[float]]:
+    if isinstance(value, (list, tuple)) and len(value) >= 2:
+        x, y = _float(value[0]), _float(value[1])
+        if x is None or y is None:
+            return None
+        return [round(x, 2), round(y, 2)]
+    return None
 
 
 def _bounce(delivery: dict) -> BounceOut:
@@ -460,7 +689,10 @@ __all__ = [
     "BounceOut",
     "BowlingOut",
     "DeliveryOut",
+    "PitchOut",
+    "PitchPositionOut",
     "QualityOut",
+    "ResultDocument",
     "ShotOut",
     "TrajectoryOut",
     "TrajectoryPointOut",

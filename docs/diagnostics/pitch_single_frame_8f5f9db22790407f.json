@@ -1,0 +1,49 @@
+{
+  "calibration_confidence": 0.8002,
+  "detector_result": "ok",
+  "final_result": "calibration built (pitch drawn)",
+  "frame": 341,
+  "http_elapsed_ms": [
+    1763.48
+  ],
+  "http_errors": [],
+  "http_requests": 1,
+  "http_statuses": [
+    200
+  ],
+  "image_size": [
+    1280,
+    720
+  ],
+  "local_validation": "accepted",
+  "min_area_fraction": 0.01,
+  "min_confidence": 0.5,
+  "min_keypoints": 3,
+  "model_id": "cricketpitchkeypointdetections/3",
+  "raw_confidence": 0.8002,
+  "raw_keypoint_count": 4,
+  "raw_keypoints": {
+    "bottomleftwidepoint": [
+      561.0,
+      571.0,
+      0.9227
+    ],
+    "bottomrightwidepoint": [
+      811.0,
+      570.0,
+      0.9988
+    ],
+    "topleftwidepoint": [
+      593.0,
+      265.0,
+      0.9696
+    ],
+    "toprightwidepoint": [
+      792.0,
+      261.0,
+      0.9975
+    ]
+  },
+  "video_timestamp": "00:13.640",
+  "wall_ms": 1789.75
+}

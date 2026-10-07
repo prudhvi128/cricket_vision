@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import unittest
 
-from app.schemas.frontend import DeliveryOut, serialize_delivery, serialize_result_document
+from app.schemas.frontend import DeliveryOut, ResultDocument, serialize_delivery, serialize_result_document
 
 ANALYSIS_ID = "abc123"
 
@@ -193,14 +193,29 @@ def frontend(**overrides) -> dict:
 
 
 TOP_LEVEL = {
-    "delivery_id",
-    "delivery_ref",
+    "id",
     "video",
     "trajectory",
     "bounce",
     "bowling",
     "shot",
     "quality",
+    "pitch",
+}
+
+POINT_KEYS = {"frame", "x", "y", "source", "confidence", "pitch_position"}
+
+PITCH_KEYS = {
+    "state",
+    "detected",
+    "calibrated",
+    "confidence",
+    "using_previous_calibration",
+    "keypoints",
+    "corners",
+    "center",
+    "homography_available",
+    "orientation",
 }
 
 
@@ -219,10 +234,7 @@ class TestResponseShape(unittest.TestCase):
             set(body["trajectory"]),
             {"points", "detected_points", "predicted_points", "continuity"},
         )
-        self.assertEqual(
-            set(body["trajectory"]["points"][0]),
-            {"frame", "x", "y", "source", "confidence"},
-        )
+        self.assertEqual(set(body["trajectory"]["points"][0]), POINT_KEYS)
         self.assertEqual(
             set(body["bounce"]),
             {"detected", "frame", "x", "y", "ground_x_m", "ground_y_m"},
@@ -238,6 +250,9 @@ class TestResponseShape(unittest.TestCase):
             {"trajectory_valid", "tracking_confidence",
              "requires_human_review", "flags"},
         )
+        # The pitch block is always present, even on a run with no key: a
+        # client reads `pitch.state` without testing whether `pitch` exists.
+        self.assertEqual(set(body["pitch"]), PITCH_KEYS)
 
     def test_no_internal_field_reaches_the_response(self):
         """Whatever the pipeline records, none of it is serialised."""
@@ -251,20 +266,21 @@ class TestResponseShape(unittest.TestCase):
             "class_probabilities", "overlay", "tracking_source",
             "detection_start_frame", "ball_lost_frame", "release_frame",
             "event_ranges", "frame_offset", "gaps",
+            # Pitch internals: only keypoints/corners/state cross the wire.
+            "model_id", "image_size", "frame_number",
         ):
             self.assertNotIn(leaked, serialised, leaked)
 
     def test_a_model_rejects_an_undeclared_field(self):
         with self.assertRaises(Exception):
-            DeliveryOut(**{"delivery_id": 1, "delivery_ref": "delivery_001",
+            DeliveryOut(**{"id": 1,
                            "video": {}, "trajectory": {}, "bounce": {},
                            "bowling": {}, "shot": {}, "quality": {},
                            "provenance": {}})
 
     def test_values_are_carried_across_unchanged(self):
         body = frontend()
-        self.assertEqual(body["delivery_id"], 22)
-        self.assertEqual(body["delivery_ref"], "delivery_022")
+        self.assertEqual(body["id"], 22)
         self.assertEqual(body["video"]["start_frame"], 7986)
         self.assertEqual(body["video"]["end_frame"], 8081)
         self.assertEqual(body["video"]["fps"], 25.0)
@@ -293,9 +309,12 @@ class TestResponseShape(unittest.TestCase):
 
 
 class TestPathsNeverEscape(unittest.TestCase):
-    def test_the_stored_url_is_used_when_it_is_already_a_url(self):
-        self.assertEqual(frontend()["video"]["clip_url"],
-                         "/data/runs/x/clips/delivery_022.mp4")
+    def test_the_stored_url_is_reissued_as_the_public_clips_route(self):
+        """A /data/... url names a file; only the route that serves it is public."""
+        self.assertEqual(
+            frontend()["video"]["clip_url"],
+            f"/api/analysis/{ANALYSIS_ID}/clips/delivery_022.mp4",
+        )
 
     def test_a_filesystem_path_is_replaced_by_the_api_route(self):
         """A record whose clip_url is a path must not hand that path out."""
@@ -308,7 +327,7 @@ class TestPathsNeverEscape(unittest.TestCase):
         ).model_dump()
         self.assertEqual(
             body["video"]["clip_url"],
-            f"/api/analysis/{ANALYSIS_ID}/deliveries/22/clip",
+            f"/api/analysis/{ANALYSIS_ID}/clips/delivery_022.mp4",
         )
 
     def test_no_absolute_path_survives_anywhere_in_the_payload(self):
@@ -480,21 +499,28 @@ class TestQualityCollapse(unittest.TestCase):
         self.assertEqual(len(flags), len(set(flags)))
 
 
-class TestArrayOrdering(unittest.TestCase):
-    def test_the_array_is_the_document_order_so_index_navigation_works(self):
+class TestEnvelopeOrdering(unittest.TestCase):
+    def test_the_deliveries_are_in_document_order_so_index_navigation_works(self):
         doc = {
             "analysis_id": ANALYSIS_ID,
             "deliveries": [internal_delivery(delivery_id=i) for i in (1, 2, 3)],
         }
-        body = serialize_result_document(doc)
-        self.assertEqual([d.delivery_id for d in body], [1, 2, 3])
+        envelope = serialize_result_document(doc)
+        body = envelope.deliveries
+        self.assertEqual(envelope.analysis_id, ANALYSIS_ID)
+        self.assertEqual(envelope.status, "completed")
+        self.assertEqual([d.id for d in body], [1, 2, 3])
         # Previous/Next: index ± 1 yields the neighbouring delivery whole.
         current = body[1].model_dump()
-        self.assertEqual(current["delivery_id"], 2)
+        self.assertEqual(current["id"], 2)
         self.assertEqual(set(current), TOP_LEVEL)
 
-    def test_a_document_with_no_deliveries_is_an_empty_array(self):
-        self.assertEqual(serialize_result_document({"analysis_id": "x"}), [])
+    def test_a_document_with_no_deliveries_is_an_empty_envelope(self):
+        envelope = serialize_result_document({"analysis_id": "x"})
+        ResultDocument.model_validate(envelope.model_dump())
+        self.assertEqual(envelope.deliveries, [])
+        self.assertEqual(envelope.analysis_id, "x")
+        self.assertEqual(envelope.pitch.state, "no_calibration")
 
 
 if __name__ == "__main__":

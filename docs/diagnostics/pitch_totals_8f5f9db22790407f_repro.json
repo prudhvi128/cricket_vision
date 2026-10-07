@@ -1,0 +1,149 @@
+{
+  "baseline_run": "8f5f9db22790407f",
+  "fps": 25.0,
+  "frames_offered": 13565,
+  "http_log_size": 1114,
+  "repro_config": {
+    "interval_frames": 5,
+    "max_input_size": 1024,
+    "min_area_fraction": 0.01,
+    "min_confidence": 0.5,
+    "min_keypoints": 3,
+    "model_id": "cricketpitchkeypointdetections/3",
+    "queue_capacity": 2,
+    "request_timeout_seconds": 15.0,
+    "sampling_mode": "interval"
+  },
+  "reproduced_run": "e991206283574d2d",
+  "retried_detector_calls": 0,
+  "single_frame_test": {
+    "calibration_confidence": 0.8002,
+    "detector_result": "ok",
+    "final_result": "calibration built (pitch drawn)",
+    "frame": 341,
+    "http_elapsed_ms": [
+      1763.48
+    ],
+    "http_errors": [],
+    "http_requests": 1,
+    "http_statuses": [
+      200
+    ],
+    "image_size": [
+      1280,
+      720
+    ],
+    "local_validation": "accepted",
+    "min_area_fraction": 0.01,
+    "min_confidence": 0.5,
+    "min_keypoints": 3,
+    "model_id": "cricketpitchkeypointdetections/3",
+    "raw_confidence": 0.8002,
+    "raw_keypoint_count": 4,
+    "raw_keypoints": {
+      "bottomleftwidepoint": [
+        561.0,
+        571.0,
+        0.9227
+      ],
+      "bottomrightwidepoint": [
+        811.0,
+        570.0,
+        0.9988
+      ],
+      "topleftwidepoint": [
+        593.0,
+        265.0,
+        0.9696
+      ],
+      "toprightwidepoint": [
+        792.0,
+        261.0,
+        0.9975
+      ]
+    },
+    "video_timestamp": "00:13.640",
+    "wall_ms": 1789.75
+  },
+  "totals": {
+    "baseline_reference": {
+      "attempts": 863,
+      "detections": 24,
+      "failures": 799,
+      "identity": "2713 = 1850 queue drops + 799 failures + 40 refusals + 24 detections",
+      "queue_drops": 1850,
+      "refusals": 40,
+      "submitted": 2713
+    },
+    "http_status_histogram": {
+      "200": 1114
+    },
+    "repro": {
+      "DETECTOR_CALLS": 1114,
+      "HTTP_200": 1114,
+      "HTTP_429": 0,
+      "HTTP_4XX_5XX": 0,
+      "LEFT_IN_QUEUE_AT_END": 0,
+      "LOCAL_VALIDATION_REFUSALS": 52,
+      "NETWORK_FAILURES": 0,
+      "NETWORK_HTTP_ERRORS": 0,
+      "NO_KEYPOINTS": 1035,
+      "OTHER_FAILURES": 0,
+      "PROCESSED_ATTEMPTS": 1114,
+      "QUEUE_DROPS": 1599,
+      "QUOTA_OR_RATE_LIMIT": 0,
+      "ROBofLOW_HTTP_REQUESTS": 1114,
+      "ROBofLOW_INFERENCE_POSTS": 1114,
+      "ROBofLOW_METADATA_GETS": 0,
+      "SUBMITTED": 2713,
+      "TIMEOUTS": 0,
+      "TIMEOUT_HTTP_ERRORS": 0,
+      "VALID_DETECTIONS": 27
+    },
+    "repro_categories": {
+      "detected": 27,
+      "no_keypoints": 1035,
+      "refused": 52
+    },
+    "repro_gated": {
+      "spacing": 10852
+    },
+    "repro_latency_ms": {
+      "max": 1491.62,
+      "mean": 476.14,
+      "n": 1114,
+      "p50": 454.36,
+      "p95": 607.56
+    },
+    "repro_queue": {
+      "capacity": 2,
+      "evictions": 1599,
+      "max_depth_observed": 2
+    },
+    "repro_queue_wait_ms": {
+      "max": 1674.25,
+      "mean": 286.25,
+      "n": 1114,
+      "p50": 275.47,
+      "p95": 449.47
+    },
+    "repro_refusal_reasons": {
+      "keypoint_hull_too_small": 29,
+      "only_0_usable_keypoints": 4,
+      "only_1_usable_keypoints": 4,
+      "only_2_usable_keypoints": 15
+    },
+    "repro_sampling": {
+      "base_interval_frames": 5,
+      "mode": "interval",
+      "offered": 13565
+    },
+    "repro_throughput": {
+      "active_seconds": 549.454,
+      "processed_per_s": 2.026,
+      "submitted_per_s": 4.941
+    }
+  },
+  "video": "C:\\Users\\LENOVO\\Desktop\\New folder\\data\\runs\\8f5f9db22790407f\\source.mp4",
+  "video_frames": 13565
+}

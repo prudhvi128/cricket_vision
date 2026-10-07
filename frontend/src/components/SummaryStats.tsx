@@ -1,39 +1,66 @@
 import { Gauge, Target, MapPin, Activity } from "lucide-react";
 
+/**
+ * Match Summary — computed ONLY from the deliveries this page was handed,
+ * which are the current analysis's own. Nothing is read from storage, from a
+ * previous analysis or from a constant: with three measured speeds out of
+ * thirty-seven, the average is those three and the other thirty-four simply
+ * have no speed. Absent measurements render "—", never a placeholder label.
+ */
 interface Delivery {
-  ball: number; speed: number; length: string; line: string; swing: string;
+  ball: number;
+  speed?: number;
+  length?: string;
+  line?: string;
+  swing?: string;
 }
 interface Props { deliveries: Delivery[]; processingTime?: number; }
 
-const mostCommon = (arr: string[]) => {
-  if (!arr.length) return "—";
+const DASH = "—";
+
+/** Most common of the values that EXIST; "—" when none does. */
+const mostCommon = (arr: (string | undefined)[]) => {
+  const values = arr.filter((v): v is string => Boolean(v));
+  if (!values.length) return DASH;
   const freq: Record<string, number> = {};
-  arr.forEach((v) => (freq[v] = (freq[v] || 0) + 1));
+  values.forEach((v) => (freq[v] = (freq[v] || 0) + 1));
   return Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
 };
+
+/** Measured speeds only — a missing speed is not a zero-speed delivery. */
+const measuredSpeeds = (deliveries: Delivery[]): number[] =>
+  deliveries
+    .map((d) => d.speed)
+    .filter((s): s is number => typeof s === "number" && Number.isFinite(s) && s > 0);
 
 const SummaryStats = ({ deliveries, processingTime }: Props) => {
   if (!deliveries.length) return null;
 
   const total       = deliveries.length;
-  const speedBalls  = deliveries.filter((d) => d.speed > 0);
-  const avgSpeed    = speedBalls.length ? Math.round(speedBalls.reduce((s, d) => s + d.speed, 0) / speedBalls.length) : 0;
-  const maxSpeed    = speedBalls.length ? Math.max(...speedBalls.map((d) => d.speed)) : 0;
+  const speeds      = measuredSpeeds(deliveries);
+  const avgSpeed    = speeds.length ? speeds.reduce((s, v) => s + v, 0) / speeds.length : null;
+  const maxSpeed    = speeds.length ? Math.max(...speeds) : null;
   const commonLen   = mostCommon(deliveries.map((d) => d.length));
   const commonLine  = mostCommon(deliveries.map((d) => d.line));
 
+  // Breakdowns count every delivery, with the unmeasured ones gathered under
+  // "—", so the bars always account for all `total` balls and a missing
+  // measurement is visible rather than silently dropped.
   const lenCounts: Record<string, number>  = {};
   const lineCounts: Record<string, number> = {};
   deliveries.forEach((d) => {
-    lenCounts[d.length]  = (lenCounts[d.length]  || 0) + 1;
-    lineCounts[d.line]   = (lineCounts[d.line]   || 0) + 1;
+    const len = d.length || DASH;
+    const line = d.line || DASH;
+    lenCounts[len]  = (lenCounts[len]  || 0) + 1;
+    lineCounts[line] = (lineCounts[line] || 0) + 1;
   });
 
   const cards = [
     { icon: Activity, label: "Total Deliveries", value: String(total),
       sub: processingTime ? `Processed in ${processingTime}s` : "", color: "from-blue-500 to-blue-600" },
-    { icon: Gauge,    label: "Avg Speed",  value: avgSpeed ? `${avgSpeed} km/h` : "—",
-      sub: maxSpeed ? `Max: ${maxSpeed} km/h` : "", color: "from-orange-500 to-red-500" },
+    { icon: Gauge,    label: "Avg Speed",
+      value: avgSpeed !== null ? `${avgSpeed.toFixed(1)} km/h` : DASH,
+      sub: maxSpeed !== null ? `Max: ${maxSpeed.toFixed(1)} km/h` : "", color: "from-orange-500 to-red-500" },
     { icon: MapPin,   label: "Top Length", value: commonLen,
       sub: `${lenCounts[commonLen] || 0} of ${total} balls`, color: "from-green-500 to-emerald-600" },
     { icon: Target,   label: "Top Line",   value: commonLine,
@@ -55,7 +82,10 @@ const SummaryStats = ({ deliveries, processingTime }: Props) => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium mb-1">{c.label}</p>
-              <p className="text-xl font-bold tracking-tight">{c.value}</p>
+              <p className="text-xl font-bold tracking-tight"
+                 data-testid={`summary-${c.label.toLowerCase().replace(/\s+/g, "-")}`}>
+                {c.value}
+              </p>
               {c.sub && <p className="text-xs text-muted-foreground mt-0.5">{c.sub}</p>}
             </div>
           </div>

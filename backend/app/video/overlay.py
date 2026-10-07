@@ -163,7 +163,6 @@ class OverlayRenderer:
 
         return OverlayInfo(
             path=str(out_path),
-            url=f"{paths.public_prefix}/overlays/delivery_{delivery.delivery_id:03d}.mp4",
             rendered=True,
             trajectory_source="stored",
         )

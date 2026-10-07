@@ -14,13 +14,17 @@ import unittest
 import numpy as np
 
 from app.core.constants import (
+    CREASE_WIDTH_M,
+    MAX_EARLY_POSITIONS,
+    PITCH_LENGTH_M,
     SPEED_CALIBRATION_OFFSET_KMH,
     SPEED_CALIBRATION_SCALE,
 )
 from app.schemas.tracking import Trajectory, TrajectoryPoint
 from app.analytics.bowling import analyse_delivery
 from app.analytics.calibration import calibration_metadata, make_homography
-from app.analytics.trajectory import compute_release_speed
+from app.analytics.pitch_geometry import AXIS_V, PitchGeometry
+from app.analytics.trajectory import classify_length_m, compute_release_speed
 
 W, H, FPS = 640, 360, 25.0
 HOMOGRAPHY = make_homography(W, H)
@@ -244,6 +248,112 @@ class TestAnalyticsUsesPixelCoordinatesForZones(unittest.TestCase):
         tracked = {(p.original_frame, p.x, p.y) for p in traj.points}
         for s in samples:
             self.assertIn((s.original_frame, s.x, s.y), tracked)
+
+
+class TestSpeedScaleAppliesOnlyWhenAskedFor(unittest.TestCase):
+    """D2's other half: the x2.0/-20 heuristic is a hand-tuned correction.
+
+    It exists to rescue a template homography whose corner fractions were
+    measured on a different broadcast framing. It must never touch a number
+    computed from geometry measured on THIS video, so both modes are pinned
+    here rather than left to whichever one the caller happens to pick.
+    """
+
+    POINTS = [((250 + i * 8, 150 + i * 6), 100 + i) for i in range(12)]
+
+    def _expected(self, scale: float, offset: float) -> float:
+        from app.analytics.calibration import pixel_to_ground
+
+        ts = np.array([f / FPS for _, f in self.POINTS])
+        gxs = np.array([pixel_to_ground(p, HOMOGRAPHY)[0] for p, _ in self.POINTS])
+        gys = np.array([pixel_to_ground(p, HOMOGRAPHY)[1] for p, _ in self.POINTS])
+        t_rel = ts - ts[0]
+        vx = np.polyfit(t_rel, gxs, 1)[0]
+        vy = np.polyfit(t_rel, gys, 1)[0]
+        return float(np.hypot(vx, vy) * 3.6 * scale + offset)
+
+    def test_with_the_heuristic(self):
+        raw = compute_release_speed(self.POINTS, FPS, HOMOGRAPHY)
+        self.assertIsNotNone(raw)
+        self.assertAlmostEqual(
+            raw, round(self._expected(SPEED_CALIBRATION_SCALE,
+                                      SPEED_CALIBRATION_OFFSET_KMH), 1),
+            delta=1.5,
+        )
+
+    def test_without_it_the_reading_is_bare_metres_per_second(self):
+        raw = compute_release_speed(
+            self.POINTS, FPS, HOMOGRAPHY, apply_scale_offset=False
+        )
+        self.assertIsNotNone(raw)
+        self.assertAlmostEqual(raw, round(self._expected(1.0, 0.0), 1), delta=1.5)
+
+
+class TestMeasuredPitchGeometryWins(unittest.TestCase):
+    """The pitch keypoint quad is the ground plane when it was detected here.
+
+    Two things are asserted: the metres it produces are the ones published, and
+    the hand-tuned speed correction is not applied to them - a quad measured on
+    this footage already carries the right scale.
+    """
+
+    @staticmethod
+    def geometry(scale: float) -> PitchGeometry:
+        """An exact pixel->metres transform: `scale` metres per pixel on both axes."""
+        homography = np.array(
+            [[scale, 0.0, 0.0], [0.0, scale, 0.0], [0.0, 0.0, 1.0]]
+        )
+        normalise = np.array(
+            [
+                [1.0 / CREASE_WIDTH_M, 0.0, 0.0],
+                [0.0, 1.0 / PITCH_LENGTH_M, 0.0],
+                [0.0, 0.0, 1.0],
+            ]
+        )
+        return PitchGeometry(
+            homography=homography,
+            map_homography=normalise @ homography,
+            axis=AXIS_V,
+            batting_end=1.0,
+            travel_delta=0.8,
+            calibration_frame=5,
+        )
+
+    def test_the_quad_becomes_the_ground_plane(self):
+        traj = straight_trajectory(14)
+        _, _, bowling, _, flags = analyse_delivery(
+            traj, HOMOGRAPHY, FPS, W, H, pitch_geometry=self.geometry(0.001)
+        )
+        self.assertIn("ground_plane_from_pitch_keypoints", flags)
+        self.assertTrue(bowling.geometry_calibrated)
+        self.assertNotIn("pitch_calibration_required", flags)
+
+    def test_the_published_length_is_the_metres_the_quad_measured(self):
+        traj = straight_trajectory(14)
+        _, bounce, bowling, _, flags = analyse_delivery(
+            traj, HOMOGRAPHY, FPS, W, H, pitch_geometry=self.geometry(0.09)
+        )
+        self.assertIsNotNone(bounce.ground_y_m)
+        expected = classify_length_m(PITCH_LENGTH_M - bounce.ground_y_m)
+        self.assertEqual(bowling.length, expected)
+        if expected is None:
+            self.assertIn("length_unavailable", flags)
+        else:
+            self.assertNotIn("length_unavailable", flags)
+
+    def test_the_speed_carries_no_hand_tuned_correction(self):
+        traj = straight_trajectory(14)
+        _, _, bowling, _, _ = analyse_delivery(
+            traj, HOMOGRAPHY, FPS, W, H, pitch_geometry=self.geometry(0.145)
+        )
+        detected = traj.detected_points()
+        early = [((p.x, p.y), p.original_frame) for p in detected][:MAX_EARLY_POSITIONS]
+        plain = compute_release_speed(
+            early, FPS, self.geometry(0.145).homography, apply_scale_offset=False
+        )
+        self.assertIsNotNone(plain)
+        self.assertEqual(bowling.speed_kmh, round(plain, 1))
+        self.assertFalse(bowling.speed_calibrated)
 
 
 if __name__ == "__main__":

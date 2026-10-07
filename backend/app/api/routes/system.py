@@ -1,9 +1,9 @@
 """
-system.py — Liveness and the self-describing contract document.
+system.py — Liveness.
 
 Deliberately tiny. `/api/health` is the one endpoint guaranteed to answer before
-any analysis exists, so a client can learn the schema version, the stage
-vocabulary, and the calibration facts from `/api/reference` without guessing.
+any analysis exists, so a client can check that the API is up and which schema
+and pipeline version it is running.
 """
 
 from __future__ import annotations
@@ -11,7 +11,6 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from ...core.constants import PIPELINE_STAGES, PIPELINE_VERSION, SCHEMA_VERSION
-from ...reference import reference_document
 from ..deps import get_jobs
 
 router = APIRouter()
@@ -37,14 +36,3 @@ def health() -> dict:
         # the vocabulary, and so a contract change is visible in a health check.
         "stages": list(PIPELINE_STAGES),
     }
-
-
-@router.get("/reference")
-def reference() -> dict:
-    """
-    Authoritative enum and calibration data.
-
-    Clients should read shot labels, length/line zones and calibration facts from
-    here instead of hardcoding them — the two merged frontends disagreed on both.
-    """
-    return reference_document()

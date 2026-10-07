@@ -3,17 +3,20 @@ test_result_frontend_response.py — What `GET /api/analysis/{id}/result` serves
 
 The contract this pins down:
 
-  * the body is an ARRAY of deliveries, so a client does
-    `deliveries[currentIndex]` for Previous/Next and gets that delivery's video,
-    trajectory, bounce, bowling analytics, shot and quality state in one object;
+  * the body is ONE envelope — `analysis_id`, `status`, `pitch`, `deliveries` —
+    so a client knows which analysis it is looking at and can render the
+    calibration in effect without walking the list;
+  * `deliveries` is an array, so a client does `deliveries[currentIndex]` for
+    Previous/Next and gets that delivery's video, trajectory, bounce, bowling
+    analytics, shot and quality state in one object;
   * every entry has the identical schema — a client never has to check which
     keys exist;
   * no internal/debug object and no filesystem path is exposed;
   * `source` still distinguishes detected from predicted points;
   * nulls stay null when a value could not legitimately be computed;
-  * `clip_url` actually serves video bytes;
-  * the internal document, with all of its detail, is still available on
-    `/result/internal` — nothing was deleted to make the array clean.
+  * `clip_url` actually serves video bytes through the clips route;
+  * the internal document, with all of its detail, still lands on disk in
+    `result.json` untouched — nothing was deleted to make the response clean.
 
 The pipeline is exercised end to end (stub detector, synthetic video), so this
 is the served response, not a hand-built fixture.
@@ -21,32 +24,35 @@ is the served response, not a hand-built fixture.
 
 from __future__ import annotations
 
+import json
 import re
 import tempfile
 import unittest
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.testclient import TestClient
 
 from app.api.routes import router
 from app.core.config import Paths
 from app.pipeline.analysis_pipeline import UnifiedPipeline
-from app.schemas.frontend import DeliveryOut
+from app.schemas.frontend import DeliveryOut, PitchOut, ResultDocument
+from app.storage.persistence import read_json
 from tests.helpers import StubDetector, make_video
 
 W, H, FPS = 320, 180, 25.0
 
+ENVELOPE_KEYS = {"analysis_id", "status", "pitch", "deliveries"}
+
 TOP_LEVEL_KEYS = {
-    "delivery_id",
-    "delivery_ref",
+    "id",
     "video",
     "trajectory",
     "bounce",
     "bowling",
     "shot",
     "quality",
+    "pitch",
 }
 
 # Anything the internal document carries that must never reach a browser.
@@ -59,6 +65,10 @@ FORBIDDEN_KEYS = {
     "class_probabilities", "detection_start_frame", "detection_end_frame",
     "ball_lost_frame", "release_frame", "frame_offset", "gaps",
     "event_ranges", "tracking_source", "index",
+    # Pitch internals: the block a client gets is keypoints/corners/state; the
+    # matrix, the source dimensions and the frame it came from stay server-side
+    # (the matrix is applied into `trajectory.points[].pitch_position` instead).
+    "homography", "model_id", "image_size", "frame_number",
 }
 
 WINDOWS_PATH = re.compile(r"[A-Za-z]:[\\/]")
@@ -75,7 +85,7 @@ def walk(node, path="$"):
             yield from walk(value, f"{path}[{i}]")
 
 
-class TestFrontendResultArray(unittest.TestCase):
+class TestFrontendResultEnvelope(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._tmp = tempfile.TemporaryDirectory()
@@ -85,24 +95,16 @@ class TestFrontendResultArray(unittest.TestCase):
         cls.paths = Paths(analysis_id="frontend_schema_test").ensure()
         pipeline = UnifiedPipeline(detector=StubDetector([(30, 70), (200, 240)]))
         pipeline._build_classifier = lambda emit, result: None  # type: ignore
-        cls.internal = pipeline.run(
-            source_video=str(video), paths=cls.paths, progress=None
-        )
+        pipeline.run(source_video=str(video), paths=cls.paths, progress=None)
         app = FastAPI()
         app.include_router(router, prefix="/api")
-        # main.py mounts DATA_DIR at /data, which makes the stored
-        # `/data/runs/<id>/clips/...` URLs resolve. Tests write to the temp runs
-        # directory instead, so `/data/runs` is mounted there to reproduce the
-        # same URL → file mapping a browser sees in production.
-        app.mount(
-            "/data/runs",
-            StaticFiles(directory=str(cls.paths.root.parent), check_dir=False),
-            name="data",
-        )
         cls.client = TestClient(app)
-        cls.body = cls.client.get(
+        cls.envelope = cls.client.get(
             f"/api/analysis/{cls.paths.analysis_id}/result"
         ).json()
+        cls.body = cls.envelope["deliveries"]
+        # Straight off disk, never through a route: the diagnostics document.
+        cls.internal = read_json(cls.paths.result_json)
 
     @classmethod
     def tearDownClass(cls):
@@ -113,14 +115,21 @@ class TestFrontendResultArray(unittest.TestCase):
         shutil.rmtree(analysis_root(cls.paths.analysis_id), ignore_errors=True)
         cls._tmp.cleanup()
 
-    # ── The array requirement ────────────────────────────────────────────────
-    def test_the_response_is_an_array(self):
-        self.assertIsInstance(self.body, list)
+    # ── The envelope ─────────────────────────────────────────────────────────
+    def test_the_response_is_one_envelope(self):
+        self.assertEqual(set(self.envelope), ENVELOPE_KEYS)
+        self.assertEqual(self.envelope["analysis_id"], self.paths.analysis_id)
+        self.assertEqual(self.envelope["status"], "completed")
+        ResultDocument.model_validate(self.envelope)  # raises on any stray key
 
-    def test_the_array_holds_every_served_delivery_in_order(self):
+    def test_the_envelope_pitch_block_matches_the_model(self):
+        PitchOut.model_validate(self.envelope["pitch"])
+
+    def test_the_deliveries_array_holds_every_served_delivery_in_order(self):
+        self.assertIsInstance(self.envelope["deliveries"], list)
         self.assertEqual(
-            [d["delivery_id"] for d in self.body],
-            [d.delivery_id for d in self.internal.deliveries],
+            [d["id"] for d in self.body],
+            [d["delivery_id"] for d in self.internal["deliveries"]],
         )
 
     def test_previous_next_needs_nothing_beyond_the_array_index(self):
@@ -142,7 +151,7 @@ class TestFrontendResultArray(unittest.TestCase):
             for block in ("video", "trajectory", "bounce", "bowling", "shot",
                           "quality"):
                 self.assertEqual(
-                    set(delivery[block]), set(first[block]), delivery["delivery_id"]
+                    set(delivery[block]), set(first[block]), delivery["id"]
                 )
             self.assertEqual(
                 set(delivery["trajectory"]["points"][0]),
@@ -169,12 +178,10 @@ class TestFrontendResultArray(unittest.TestCase):
     def test_the_internal_document_is_untouched_by_the_serializer(self):
         """
         The point of the architecture: cleaning the response must not clean the
-        pipeline. Everything the serializer drops is still served by
-        `/result/internal` for diagnostics.
+        pipeline. Everything the serializer drops is still in `result.json` —
+        on disk, reachable by any tool that can read a file, and by no route.
         """
-        internal = self.client.get(
-            f"/api/analysis/{self.paths.analysis_id}/result/internal"
-        ).json()
+        internal = self.internal
         self.assertEqual(internal["analysis_id"], self.paths.analysis_id)
         self.assertIn("summary", internal)
         self.assertIn("quarantine", internal)
@@ -190,7 +197,7 @@ class TestFrontendResultArray(unittest.TestCase):
         # …and the two documents describe the same deliveries.
         self.assertEqual(
             [d["delivery_id"] for d in internal["deliveries"]],
-            [d["delivery_id"] for d in self.body],
+            [d["id"] for d in self.body],
         )
 
     # ── Trajectory ───────────────────────────────────────────────────────────
@@ -201,12 +208,13 @@ class TestFrontendResultArray(unittest.TestCase):
             self.assertEqual(
                 traj["detected_points"] + traj["predicted_points"],
                 len(traj["points"]),
-                delivery["delivery_id"],
+                delivery["id"],
             )
             for point in traj["points"]:
                 self.assertIn(point["source"], ("detected", "predicted"))
                 self.assertEqual(set(point),
-                                 {"frame", "x", "y", "source", "confidence"})
+                                 {"frame", "x", "y", "source", "confidence",
+                                  "pitch_position"})
                 sources.add(point["source"])
                 if point["source"] == "detected":
                     self.assertIsInstance(point["confidence"], float)
@@ -280,7 +288,7 @@ class TestFrontendResultArray(unittest.TestCase):
     def test_clip_url_is_a_url_for_every_delivery(self):
         for delivery in self.body:
             url = delivery["video"]["clip_url"]
-            self.assertIsInstance(url, str, delivery["delivery_id"])
+            self.assertIsInstance(url, str, delivery["id"])
             self.assertTrue(url.startswith("/"), url)
             self.assertFalse(WINDOWS_PATH.search(url), url)
 
@@ -308,19 +316,19 @@ class TestFrontendResultArray(unittest.TestCase):
             )
 
     # ── Routes ───────────────────────────────────────────────────────────────
-    def test_the_legacy_plural_route_returns_the_same_array(self):
-        plural = self.client.get(
-            f"/api/analyses/{self.paths.analysis_id}/result"
-        ).json()
-        self.assertIsInstance(plural, list)
-        self.assertEqual(plural, self.body)
+    def test_the_removed_routes_are_gone_not_silently_serving(self):
+        for path in (
+            f"/api/analyses/{self.paths.analysis_id}/result",
+            f"/api/analysis/{self.paths.analysis_id}/result/internal",
+            f"/api/analyses/{self.paths.analysis_id}/status",
+            f"/api/analysis/{self.paths.analysis_id}/deliveries",
+            f"/api/analysis/{self.paths.analysis_id}/deliveries/1/clip",
+        ):
+            self.assertEqual(self.client.get(path).status_code, 404, path)
 
-    def test_an_unknown_analysis_is_still_404(self):
+    def test_an_unknown_analysis_is_404(self):
         self.assertEqual(
             self.client.get("/api/analysis/nope/result").status_code, 404
-        )
-        self.assertEqual(
-            self.client.get("/api/analysis/nope/result/internal").status_code, 404
         )
 
     def test_a_still_running_analysis_is_409_not_a_partial_array(self):

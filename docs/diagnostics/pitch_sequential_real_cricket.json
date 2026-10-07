@@ -1,0 +1,110 @@
+{
+  "after": {
+    "active_seconds": 550.461,
+    "analysis_id": "65943388aa4941df",
+    "attempts": 616,
+    "backpressure": {
+      "cooldown_ms": 500.0,
+      "in_flight": false,
+      "max_attempts_per_sec": 2.0
+    },
+    "calibration_updates": 14,
+    "categories": {
+      "detected": 14,
+      "no_keypoints": 571,
+      "refused": 31
+    },
+    "gated": {
+      "busy": 4936,
+      "cooldown": 8013
+    },
+    "latency_ms": {
+      "max": 4146.27,
+      "mean": 814.32,
+      "n": 616,
+      "p50": 679.46,
+      "p95": 1626.8
+    },
+    "local_refusals": 31,
+    "max_attempts_per_sec": 2.0,
+    "no_keypoints": 571,
+    "other_failures": 0,
+    "processed_per_s": 1.117,
+    "queue": {
+      "capacity": 2,
+      "evictions": 0,
+      "max_depth_observed": 1
+    },
+    "queue_drops": 0,
+    "queue_wait_ms": {
+      "max": 0.83,
+      "mean": 0.37,
+      "n": 616,
+      "p50": 0.35,
+      "p95": 0.53
+    },
+    "refusals_by_reason": {
+      "keypoint_hull_too_small": 16,
+      "only_0_usable_keypoints": 4,
+      "only_1_usable_keypoints": 6,
+      "only_2_usable_keypoints": 5
+    },
+    "roboflow_non_200": {},
+    "roboflow_requests": 616,
+    "roboflow_transport_errors": 0,
+    "runtime_s": 624.2,
+    "sampling_mode": "sequential",
+    "submitted": 616,
+    "submitted_per_s": 1.117,
+    "valid_detections": 14
+  },
+  "before": {
+    "attempts": 863,
+    "detections": 24,
+    "failures": 799,
+    "processed_per_s": 2.026,
+    "queue_drops": 1850,
+    "refusals": 40,
+    "run": "8f5f9db22790407f",
+    "submitted": 2713,
+    "submitted_per_s": 4.941
+  },
+  "checks": [
+    {
+      "check": "queue drops decrease substantially",
+      "detail": "1850 \u2192 0",
+      "ok": true
+    },
+    {
+      "check": "valid detections do not decrease",
+      "detail": "24 \u2192 14",
+      "ok": false
+    },
+    {
+      "check": "calibration still happens",
+      "detail": "14 updates",
+      "ok": true
+    },
+    {
+      "check": "no stale backlog (queue never held more than one frame)",
+      "detail": "max depth 1, median wait 0.35 ms",
+      "ok": true
+    },
+    {
+      "check": "every submission was answered (no lost frames)",
+      "detail": "616 = 0 + 616",
+      "ok": true
+    },
+    {
+      "check": "attempts/s inside the 1.5\u20132 target band (detector-limited)",
+      "detail": "1.117/s at 814.32 ms mean latency (capacity 1.228/s)",
+      "ok": false
+    },
+    {
+      "check": "no Roboflow rate limiting",
+      "detail": "non-200={} errors=0",
+      "ok": true
+    }
+  ],
+  "mode": "sequential"
+}

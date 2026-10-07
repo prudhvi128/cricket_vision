@@ -53,7 +53,7 @@ forbidden.
       ▼                           ▼
 ┌───────────────┐         ┌──────────────────┐
 │ SHOT LABEL    │         │ BOWLING          │
-│ (Adarsh model)│         │ ANALYTICS        │
+│               │         │ ANALYTICS        │
 └───────┬───────┘         └────────┬─────────┘
         └─────────────┬─────────────┘
                       ▼
@@ -82,8 +82,11 @@ Two honesty rules are enforced in code rather than left to the caller:
 - **Uncalibrated means null.** The homography is measured from one specific
   broadcast template. Applied to different footage it returns plausible numbers
   that are wrong — the test fixture produced 42–199 km/h with bounces off the end
-  of a 20.12 m pitch. Without a per-video pitch-corner calibration, speed,
-  length, line, swing and bounce angle are reported `null`, not estimated.
+  of a 20.12 m pitch. Without geometry measured on this video — pitch corners
+  measured by an operator, or the pitch keypoint model's quad converted to
+  metres — speed, length, line, swing and bounce angle are reported `null`, not
+  estimated. Which of those two measured the ground plane is named in
+  `calibration.geometry_source`.
 - **A quarantined delivery is not a delivery.** `MULTIPLE_EVENTS`, `NO_EVENT`
   and missing verdicts are withheld with a 404 and recorded under `quarantine`
   with the reason. `AMBIGUOUS` deliveries *are* served, with their flag visible.
@@ -103,13 +106,13 @@ Two honesty rules are enforced in code rather than left to the caller:
 │   │   ├── segmentation/        candidate_generation, barriers,
 │   │   │                        fragment_merger, purity_validator
 │   │   ├── shot_classification/ model, preprocessing, inference
-│   │   ├── analytics/           bowling, trajectory, calibration, pitch_map
+│   │   ├── analytics/           bowling, trajectory, calibration
 │   │   ├── video/               video_io, frame_buffer, clips, overlay, renderer
 │   │   ├── storage/             durable JSON writes
-│   │   └── api/                 deps, helpers, routes/
+│   │   └── api/                 deps, helpers, routes/{analysis,media,system}
 │   └── tests/
-│       ├── unit/                10 modules, no I/O beyond the filesystem
-│       ├── integration/         5 modules, drive TrackingService end to end
+│       ├── unit/                14 modules, no I/O beyond the filesystem
+│       ├── integration/         7 modules, drive TrackingService end to end
 │       └── helpers.py           synthetic video + stub detector
 ├── data/
 │   ├── datasets/source_clips/   approved 41-clip evaluation set
@@ -122,7 +125,7 @@ Two honesty rules are enforced in code rather than left to the caller:
 │   ├── diagnostics/             real_video_diagnostic, diagnose_real_deliveries,
 │   │                            run_real_video_test, diagnose_results
 │   └── verification/            e2e_real_video.py
-├── frontend/                    BallScribe UI (not yet wired to /api)
+├── frontend/                    BallScribe UI — talks to /api through src/lib/api.ts
 └── docs/
 ```
 
@@ -166,12 +169,16 @@ unclassifiable delivery must not fail a valid analysis.
 **Analyse.** Speed comes from a least-squares fit of ground position against real
 elapsed time, with one outlier-rejection pass, rather than averaging noisy
 frame-to-frame differences. Bounce requires a local minimum in both raw pixel Y
-and ground-plane Y. Length and line classification take pixel coordinates plus
-the frame dimension — passing metres here silently produces meaningless zones.
+and ground-plane Y. Length is METRES from the batting crease
+(`LENGTH_ZONES_M`); a bounce that projects off the measured pitch gets `null`,
+never the nearest zone. Line classification still takes pixel coordinates plus
+the frame dimension — leg and off cannot be derived from a pitch quad, which
+says nothing about which way the batter faces.
 
 **Overlay.** Trajectory trail, bounce marker, release marker, prediction arc, and
-a pitch map, all in coordinates the tracker actually measured. This is a
-coordinate plot, not a to-scale pitch.
+a pitch map, all in coordinates the tracker actually measured. The map's length
+bands are the measured metres on a 20.12 m pitch; its dots appear only for
+deliveries whose bounce could be placed on that pitch.
 
 ## Models
 
@@ -227,7 +234,7 @@ curl http://localhost:8000/api/analysis/{id}/result
 python scripts/diagnostics/real_video_diagnostic.py --video real_cricket.mp4
 
 # Full HTTP round trip with the real detector and the real checkpoint, asserting
-# the properties this README claims. 47 checks.
+# the properties this README claims. 66 checks.
 python scripts/verification/e2e_real_video.py real_cricket.mp4
 ```
 
@@ -239,28 +246,24 @@ python scripts/dataset/build_test_fixture.py
 
 ## API endpoints
 
-Base path `/api`. Full contract in `docs/API_CONTRACT.md`.
+Base path `/api`. Six routes; the full contract is in `docs/API_CONTRACT.md`.
 
 | Method | Path | Purpose |
 |---|---|---|
+| `POST` | `/api/analyze` | upload (`video=` field); returns `202` with an `analysis_id` |
+| `POST` | `/api/upload` | same handler, `file=` field (the other frontend's spelling) |
+| `GET` | `/api/analysis/{id}/status` | `queued` / `running` / `completed` / `failed`, `progress`, `error` |
+| `GET` | `/api/analysis/{id}/result` | `{analysis_id, status, pitch, deliveries[]}` — the envelope the UI renders |
+| `GET` | `/api/analysis/{id}/clips/{name}` | clip bytes (range-supported), the route `clip_url` points at |
 | `GET` | `/api/health` | liveness, schema + pipeline versions, stage vocabulary |
-| `GET` | `/api/reference` | shot classes, length/line zones, calibration facts |
-| `POST` | `/api/analyze` | upload; returns `202` with an `analysis_id` |
-| `GET` | `/api/analysis/{id}/status` | pollable processing state |
-| `GET` | `/api/analysis/{id}/progress` | Server-Sent Events stream |
-| `GET` | `/api/analysis/{id}/progress/json` | same payload, pollable |
-| `POST` | `/api/analysis/{id}/cancel` | request cancellation |
-| `GET` | `/api/analysis/{id}/result` | array of deliveries (frontend schema) |
-| `GET` | `/api/analysis/{id}/result/internal` | full result document + quarantine |
-| `GET` | `/api/analyses/{id}/tracking` | raw tracker output, no inference |
-| `GET` | `/api/analysis/{id}/deliveries` | validated deliveries only |
-| `GET` | `/api/analysis/{id}/deliveries/{did}` | one delivery, complete |
-| `GET` | `/api/analysis/{id}/deliveries/{did}/clip` | clip bytes (range-supported) |
-| `GET` | `/api/analysis/{id}/deliveries/{did}/overlay` | overlay bytes, or 404 |
-| `GET` | `/api/analysis/{id}/deliveries/{did}/trajectory` | trajectory + pitch map SVG |
-| `GET` | `/api/analyses` | analyses tracked in this process |
 
-Legacy aliases (`/api/upload`, `/api/analyses/{id}/...`) call the same handlers.
+There is one spelling per route. The plural aliases, `/result/internal`,
+`/progress` and `/progress/json`, `/cancel`, every `/deliveries…` and
+`/trajectory/{id}` route, the overlay routes, `/tracking`, `/api/reference`, the
+`/api/analyses` listing and the static `/data` mount are gone rather than
+deprecated — all return 404, and the tests assert that. The complete
+`result.json` (summary, calibration, performance, quarantine) is written to disk
+and served by no route.
 
 ## Testing
 
@@ -269,7 +272,7 @@ cd backend
 python -m pytest tests -q
 ```
 
-324 passed, 1 skipped. `tests/unit/` covers pure logic;
+489 passed, 1 skipped. `tests/unit/` covers pure logic;
 `tests/integration/` drives `TrackingService` and the HTTP API end to end with a
 stub detector, which keeps the suite fast and deterministic while
 `scripts/verification/e2e_real_video.py` covers the real models.
@@ -295,6 +298,12 @@ Every path and log level is overridable. See `data/README.md` for the full table
 Segmentation thresholds are `SegmentationConfig` in
 `backend/app/core/config.py`; detector and tracking constants are in
 `backend/app/core/constants.py`.
+
+The optional Roboflow pitch-keypoint detector is configured the same way:
+`ROBOFLOW_API_KEY`, `ROBOFLOW_API_URL`, `ROBOFLOW_MODEL_ID` and `PITCH_*`.
+`.env.example` at the project root documents each one. With no key the feature
+is inert — the server starts, analyses run unchanged, and every delivery reports
+`pitch.state = "no_calibration"`.
 
 ## Dataset and evaluation
 
@@ -322,9 +331,10 @@ figure derived from it describes that composite, not a real match.
   labelled `speed_is_estimate` everywhere.
 - **One camera angle.** The segmentation thresholds assume a broadcast-style side
   view. Not validated on handheld or drone footage.
-- **The frontend is not wired.** `frontend/` is the BallScribe UI; it still posts
-  to `/upload` and polls `/status` rather than `/api/analyze`. The legacy aliases
-  keep it working, but nothing verifies it.
+- **The UI expects the API on `:8000`.** `frontend/` posts to `/api/analyze`,
+  polls `/api/analysis/{id}/status` and reads `/api/analysis/{id}/result`
+  through `frontend/src/lib/api.ts`. There is no dev proxy, so a backend on
+  another origin has to be given as `VITE_API_URL`.
 - **Single-process by design.** One analysis holds the whole video in one
   process. Scale with replicas, not `--workers`.
 - **OpenH264 unavailable here.** Clip encoding falls back to software and emits
@@ -337,10 +347,12 @@ figure derived from it describes that composite, not a real match.
    editing `pipeline/analysis_pipeline.py` to change what a clip *means*, the
    change belongs in `segmentation/`.
 2. Add or update a test in `tests/unit/` or `tests/integration/`.
-3. `python -m pytest tests -q` — expect 324 passing.
+3. `python -m pytest tests -q` — expect 489 passing, 1 skipped.
 4. For anything touching detection, tracking, segmentation, or models:
    `python scripts/verification/e2e_real_video.py real_cricket.mp4`.
 5. Clean up `data/runs/test_*`.
+6. For anything in `frontend/`: `npm run build && npm run lint` (and
+   `npm run test`), run from `frontend/`.
 
 Docs to read before changing anything: `docs/CURRENT_SYSTEM.md`,
 `docs/UNIFIED_ARCHITECTURE.md`, `docs/API_CONTRACT.md`, and the module docstring

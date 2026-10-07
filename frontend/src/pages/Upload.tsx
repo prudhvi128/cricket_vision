@@ -4,6 +4,7 @@ import { Upload as UploadIcon, FileVideo, X, ArrowRight, Loader2 } from "lucide-
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
+import { clearStoredResult, setStoredAnalysisId, uploadVideo } from "@/lib/api";
 
 const ACCEPTED = ["video/mp4", "video/avi", "video/quicktime", "video/x-msvideo", "video/webm"];
 const MAX_SIZE_MB = 500;
@@ -42,17 +43,18 @@ const UploadPage = () => {
     if (!file) { toast.error("Please select a video first."); return; }
     setUploading(true);
     try {
-      const body = new FormData();
-      body.append("file", file);
-      const res = await fetch("http://127.0.0.1:8000/upload", { method: "POST", body });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || "Upload failed");
-      }
+      const { analysis_id } = await uploadVideo(file);
+      // A NEW analysis starts here: its id replaces the old one and the
+      // previous envelope goes with it, so nothing from the earlier run can
+      // be painted as this run's result while it processes or afterwards.
+      setStoredAnalysisId(analysis_id);
+      clearStoredResult();
       toast.success("Upload successful!");
-      navigate("/processing", { state: { fileName: file.name } });
-    } catch (err: any) {
-      toast.error(err.message || "Upload failed. Is the backend running?");
+      navigate("/processing", { state: { fileName: file.name, analysis_id } });
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Upload failed. Is the backend running?"
+      );
       setUploading(false);
     }
   };

@@ -5,6 +5,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import {
+  AnalysisStatus,
+  cacheResult,
+  clearStoredResult,
+  fetchResult,
+  fetchStatus,
+  getStoredAnalysisId,
+  loadCachedResult,
+} from "@/lib/api";
 
 const STAGES = [
   "Uploading video…",
@@ -14,47 +23,120 @@ const STAGES = [
   "Finalizing analysis…",
 ];
 
+/**
+ * Backend stage → the step list above. The pipeline reports seven stages
+ * (docs/API_CONTRACT.md); these five are what the UI shows, so the tracking
+ * pass is split by its substage rather than collapsed into one long step.
+ */
+function stageIndex(status: AnalysisStatus, progress: number): number {
+  switch (status.stage) {
+    case "uploading":
+      return 0;
+    case "tracking":
+      if (status.substage === "segmentation") return 1;
+      if (status.substage === "clip_writing") return 3;
+      return 2;
+    case "validation":
+      return 3;
+    case "shot_classification":
+    case "overlay":
+    case "persisting":
+    case "completed":
+      return 4;
+    default:
+      return Math.min(STAGES.length - 1, Math.floor((progress / 100) * STAGES.length));
+  }
+}
+
 const Processing = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const fileName = (location.state as { fileName?: string })?.fileName ?? "your video";
+  const navState = location.state as
+    | { fileName?: string; analysis_id?: string }
+    | null;
+  const fileName = navState?.fileName ?? "your video";
+  const [analysisId] = useState<string | null>(
+    navState?.analysis_id ?? getStoredAnalysisId()
+  );
 
   const [progress, setProgress]     = useState(0);
   const [stage, setStage]           = useState(0);
+  const [detail, setDetail]         = useState<string>("");
   const [errorMsg, setErrorMsg]     = useState<string | null>(null);
 
   useEffect(() => {
-    const interval = setInterval(async () => {
+    if (!analysisId) {
+      setErrorMsg("No analysis to follow. Upload a video first.");
+      return;
+    }
+
+    // This page follows exactly one analysis. A cached envelope that belongs
+    // to a different id is a previous run's result and is dropped, so opening
+    // /results mid-run can never paint it as this run's output.
+    if (!loadCachedResult(analysisId)) clearStoredResult();
+
+    let cancelled = false;
+    let failures = 0;
+    const started = Date.now();
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const fail = (message: string) => {
+      if (cancelled) return;
+      if (timer) clearInterval(timer);
+      setErrorMsg(message);
+    };
+
+    const poll = async () => {
+      if (cancelled) return;
+      let status: AnalysisStatus;
       try {
-        const res  = await fetch("http://127.0.0.1:8000/status");
-        const data = await res.json();
-
-        if (data.status === "processing") setProgress(data.progress || 10);
-
-        if (data.status === "completed") {
-          clearInterval(interval);
-          setProgress(100);
-          toast.success("Analysis complete!");
-          setTimeout(() => navigate("/results", {
-            state: { result: data.result, processing_time: data.processing_time },
-          }), 800);
-        }
-
-        if (data.status === "error") {
-          clearInterval(interval);
-          setErrorMsg(data.error_message || data.result?.error || "Processing failed.");
-          toast.error("Processing failed");
-        }
-      } catch {
-        toast.error("Cannot reach backend — is it running on port 8000?");
+        status = await fetchStatus(analysisId);
+        failures = 0;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Cannot reach the backend.";
+        failures += 1;
+        if (failures === 1) toast.error(message);
+        // A transient blip must not kill the page; three in a row is an outage.
+        if (failures >= 3) fail(message);
+        return;
       }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [navigate]);
+      if (cancelled) return;
 
-  useEffect(() => {
-    setStage(Math.min(STAGES.length - 1, Math.floor((progress / 100) * STAGES.length)));
-  }, [progress]);
+      const value = typeof status.progress === "number" ? status.progress : 0;
+      const clamped = Math.max(0, Math.min(100, value));
+      setProgress(clamped);
+      setStage(stageIndex(status, clamped));
+      setDetail(status.detail || "");
+
+      if (status.status === "completed") {
+        if (timer) clearInterval(timer);
+        setProgress(100);
+        const processing_time = Math.max(1, Math.round((Date.now() - started) / 1000));
+        const doc = await fetchResult(analysisId).catch(() => null);
+        // Only this analysis's envelope is worth remembering; a document that
+        // identifies as a different analysis is not cached under this id.
+        if (doc && (!doc.analysis_id || doc.analysis_id === analysisId)) {
+          cacheResult({ ...doc, analysis_id: analysisId, processing_time });
+        }
+        if (cancelled) return;
+        toast.success("Analysis complete!");
+        navigate("/results", { state: { analysis_id: analysisId, processing_time } });
+        return;
+      }
+
+      if (status.status === "failed") {
+        fail(status.error || "Processing failed.");
+        toast.error("Processing failed");
+      }
+    };
+
+    poll();
+    timer = setInterval(poll, 1000);
+    return () => {
+      cancelled = true;
+      if (timer) clearInterval(timer);
+    };
+  }, [analysisId, navigate]);
 
   if (errorMsg) return (
     <div className="min-h-screen bg-background">
@@ -106,6 +188,9 @@ const Processing = () => {
                 <div className="h-full gradient-accent transition-all duration-300 ease-out"
                   style={{ width: `${progress}%` }} />
               </div>
+              {detail && (
+                <p className="text-xs text-muted-foreground truncate text-center">{detail}</p>
+              )}
             </div>
 
             <div className="w-full space-y-2 pt-4">

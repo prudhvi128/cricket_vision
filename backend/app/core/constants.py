@@ -122,6 +122,47 @@ LINE_ZONES = [
     ("Wide Off", 0.82, 1.00),
 ]
 
+# FIVE zones, expressed where cricket expresses them: METRES from the batting
+# crease. This is the table used whenever the geometry is genuinely measured
+# (operator-measured corners, or the pitch-keypoint quad), because only then is
+# there a ground plane to measure along.
+#
+# It is not a restatement of the six image-fraction zones above: a Beamer and a
+# Bouncer cannot be told apart by metres from the crease, so they are dropped
+# rather than guessed, and a "Very Short" band covers a bounce that lands behind
+# the good-length zone. The labels that differ here are the point — the metre
+# table only claims what the measurement can support.
+#
+# Thresholds are coaching-standard distances — a yorker lands in the blockhole,
+# a good-length ball forces the batter to play from roughly 4-7 m, a short ball
+# arrives after 7 m — NOT values fitted to this footage. They live here, in one
+# place, so they can be audited or replaced without touching the code that
+# applies them. `LENGTH_ZONES` above (fractions of FRAME HEIGHT) is the ported
+# upstream rule and is no longer used for length.
+LENGTH_ZONES_M = [
+    ("Yorker", 0.0, 1.5),
+    ("Full", 1.5, 4.0),
+    ("Good Length", 4.0, 7.0),
+    ("Short", 7.0, 10.0),
+    ("Very Short", 10.0, PITCH_LENGTH_M),
+]
+
+# ── Pitch-keypoint quad → ground-plane metres (app/analytics/pitch_geometry.py) ──
+# The quad's LONG axis must clearly dominate its SHORT axis before the axis
+# assignment ("this is the 20.12 m direction") is believed. A real pitch seen
+# end-on spans several times more of the frame along its length than across its
+# width; a quad that is roughly square cannot say which axis is which, and
+# guessing would swap the length and width scales.
+PITCH_GEOMETRY_ASPECT_MIN_RATIO = 1.2
+
+# How far the ball must travel ALONG the chosen axis, in unit-square units,
+# before its direction of travel is believed. This is what decides which end of
+# the quad the batter stands at; a ball whose detections barely move cannot say.
+PITCH_GEOMETRY_TRAVEL_MIN_DELTA = 0.12
+
+# Detected points required to vote on the direction of travel at all.
+PITCH_GEOMETRY_MIN_TRAVEL_POINTS = 3
+
 # ── Single-pass architecture (UNIFIED_ARCHITECTURE.md §4) ────────────────────
 # Rolling window of recent frames kept so a delivery clip can start BEFORE the
 # delivery was known to have started. Raw 1080p is 5.93 MiB/frame, so frames are
@@ -430,3 +471,152 @@ assert WEAK_MIN_TOTAL_MEASUREMENTS == MIN_DELIVERY_FRAMES, (
     "coherent weak confirmation must not lower the delivery threshold: "
     f"{WEAK_MIN_TOTAL_MEASUREMENTS} != {MIN_DELIVERY_FRAMES}"
 )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# OPTIONAL PITCH KEYPOINT DETECTION (Roboflow)
+# ═══════════════════════════════════════════════════════════════════════════
+# An auxiliary, NON-BLOCKING detector that finds the pitch's keypoints in a
+# frame so a client can draw the pitch boundary and place the ball on it. It is
+# strictly auxiliary: the ball detector, the Kalman tracker, segmentation and
+# every analytic measurement behave identically whether this runs or not, and a
+# failure here can never fail an analysis.
+#
+# The model is optional. Without ROBOFLOW_API_KEY every value below is inert
+# (see app/pitch/service.py), and the response simply reports
+# `detected: false, calibrated: false`.
+
+# Hosted inference endpoint. The SDK treats any URL under these hosts as the
+# legacy (v0) API, which is where `project/version` model ids are served.
+ROBOFLOW_API_URL_DEFAULT = "https://serverless.roboflow.com"
+PITCH_MODEL_ID_DEFAULT = "cricketpitchkeypointdetections/3"
+
+# Frames between submissions. The loop calls `PitchService.on_frame()` every
+# frame and the service drops all but one in N, so the tracking pass pays a
+# couple of integer comparisons per frame rather than an HTTP round trip.
+# 10 frames ≈ one submission every 0.4 s at 25 fps.
+PITCH_DETECTION_INTERVAL_FRAMES = 10
+
+# A keypoint must clear this confidence to count. Sent to the server as
+# `keypoint_confidence` AND re-checked locally, because the server's threshold
+# is not this codebase's threshold.
+PITCH_MIN_CONFIDENCE = 0.5
+
+# Fewer than this many valid keypoints means the pitch quad cannot be trusted
+# (and below four there is no homography at all — see PITCH_HOMOGRAPHY_MIN_KPS).
+PITCH_MIN_KEYPOINTS = 3
+PITCH_HOMOGRAPHY_MIN_KPS = 4
+
+# The keypoints' convex hull must cover at least this share of the frame.
+# Guards against a model that answers with near-degenerate points (all four in
+# a corner, or all collapsed onto one another), which would produce a homography
+# that maps the whole video into a sliver of the pitch.
+PITCH_MIN_AREA_FRACTION = 0.01
+
+# How many frames after the last GOOD detection the calibration is still served
+# (marked `using_previous_calibration`) before it expires outright. At 25 fps,
+# 50 frames = 2 s of camera stability after which a stale quad is no longer
+# assumed to describe the current view.
+PITCH_MAX_LOST_FRAMES = 50
+
+# EMA weight for temporal smoothing of the keypoints. 1.0 would be raw model
+# output; lower values trade responsiveness for a boundary that does not jitter
+# frame to frame.
+PITCH_SMOOTHING_ALPHA = 0.4
+
+# Longest a single Roboflow call may run before it is recorded as a failure.
+# Requests are made on a background thread, so a slow call never stalls the
+# tracking loop — this only bounds how long the state machine waits before
+# giving up on that attempt.
+PITCH_REQUEST_TIMEOUT_SECONDS = 15.0
+
+# Frames the client may downsize an input to before sending. Smaller payload,
+# faster upload; the SDK maps the returned keypoints back to the original frame
+# coordinates, so the numbers in the response are full-resolution pixels.
+PITCH_MAX_INPUT_SIZE = 1024
+
+# ── Submission strategy ──────────────────────────────────────────────────────
+# Three modes, both measured rather than assumed:
+#
+#   interval  every `PITCH_DETECTION_INTERVAL`-th frame is offered, whatever
+#             happens. Predictable, and the model is asked for frames the
+#             picture cannot answer (crowd shots, replays, black frames).
+#   adaptive  the same base interval, multiplied by what the loop already
+#             knows: is this frame part of a delivery (open event, or inside
+#             the guard that runs past one), did a quad already cover this
+#             view, does the pitch corridor even contain a readable pitch, and
+#             has the model been answering "nothing there" for long enough that
+#             the scene itself is what should change. The queue's back-pressure
+#             then caps the rate at what one worker thread can actually answer,
+#             so nothing is submitted only to be thrown away.
+#   sequential backpressure-aware sequential processing: one inference at a
+#             time, and never faster than the detector answers. A frame is
+#             offered only when no call is in flight and nothing is queued
+#             (so the queue never holds a backlog of stale frames), then a
+#             wall-clock cooldown holds the next offer back until
+#             `1 / PITCH_MAX_ATTEMPTS_PER_SEC` seconds have passed. When the
+#             detector slows down the cooldown stops binding and the rate
+#             follows the latency; when it speeds up the rate rises only to
+#             the configured maximum.
+#
+# The default is `interval` — a bare `PitchConfig()` behaves exactly as before.
+# `.env` opts a real analysis into `sequential`.
+PITCH_SAMPLING_MODE_INTERVAL = "interval"
+PITCH_SAMPLING_MODE_ADAPTIVE = "adaptive"
+PITCH_SAMPLING_MODE_SEQUENTIAL = "sequential"
+PITCH_SAMPLING_MODE_DEFAULT = PITCH_SAMPLING_MODE_INTERVAL
+PITCH_SAMPLING_MODES = (
+    PITCH_SAMPLING_MODE_INTERVAL,
+    PITCH_SAMPLING_MODE_ADAPTIVE,
+    PITCH_SAMPLING_MODE_SEQUENTIAL,
+)
+
+# `sequential` mode's ceiling, in detector attempts per second. It is also the
+# cooldown: two submissions are at least `1 / this` apart on the wall clock.
+# Measured on `real_cricket.mp4` the detector answers in ~0.48 s (p95 0.61 s),
+# so 2.0/s sits at the top of the intended 1.5–2 attempts/s band, and a slower
+# answer stretches the interval by itself — the sampler never outruns it.
+PITCH_MAX_ATTEMPTS_PER_SEC = 2.0
+# Floor for that ceiling: a configured rate below this is a misconfiguration
+# rather than a policy (it would also divide by zero). The detector's own
+# latency — not this value — is what slows the sampler down when answers take
+# longer than the cooldown.
+PITCH_ATTEMPTS_PER_SEC_FLOOR = 0.1
+
+# Multipliers on the base interval (all in frames, all ≥ 1).
+PITCH_IDLE_INTERVAL_MULTIPLIER = 8    # no delivery in progress
+PITCH_COVERED_INTERVAL_MULTIPLIER = 6  # a quad already describes this view
+PITCH_DIM_INTERVAL_MULTIPLIER = 2     # the corridor holds no readable pitch
+PITCH_FORCE_INTERVAL_MULTIPLIER = 40  # never starve: attempt at least this often
+
+# How far past a delivery's last frame the footage still belongs to that
+# delivery. The clip window runs past the segmenter's event, and those
+# trailing frames are where the model answers: every keypoint response that
+# arrived outside an open event but inside a delivery window landed here, and
+# no response at all ever arrived from further away than the guard.
+PITCH_EVENT_GUARD_FRAMES = 50
+
+# The model's answer rate is a property of the scene, not of the sampler.
+# Measured over one instrumented run of `real_cricket.mp4`: 38% of attempts
+# inside a delivery carried keypoints, 3% of attempts outside one, and 0% of
+# either kind beyond the video's first third. After this many empty answers
+# in a row the sampler treats the frame as a scene the model has already
+# answered and goes quiet — until a scene cut opens a new one, or a delivery
+# makes asking worthwhile again.
+PITCH_DROUGHT_BACKOFF = 6
+PITCH_DROUGHT_INTERVAL_MULTIPLIER = 40          # between deliveries: keepalive
+PITCH_DROUGHT_INTERVAL_MULTIPLIER_IN_EVENT = 4  # inside a delivery: still worth asking
+
+# Three consecutive timeouts disable the client — and used to disable it for
+# the rest of the video, because nothing ever asked it again. A timeout that
+# came from one bad minute of the service is not a dead credential: this many
+# frames later the service gets exactly one more attempt, and three more
+# timeouts put it back to sleep for another window.
+PITCH_DETECTOR_REARM_FRAMES = 600
+
+# The pitch is a bright, washed-out surface. Measured over the pitch corridor
+# of `real_cricket.mp4`: frames where the model answered had a median corridor
+# luminance of 126, frames where it answered with nothing had 113 — and every
+# one of the sampled answers cleared 116. Below this the corridor is a crowd,
+# a graphic or a night shot, and an attempt is worth half as often, not never.
+PITCH_CORRIDOR_MIN_LUMINANCE = 115.0

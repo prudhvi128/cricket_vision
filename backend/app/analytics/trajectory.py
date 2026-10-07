@@ -29,6 +29,7 @@ from .calibration import pixel_to_ground
 
 from ..core.constants import (
     LENGTH_ZONES as _LENGTH_ZONES,
+    LENGTH_ZONES_M as _LENGTH_ZONES_M,
     LINE_ZONES as _LINE_ZONES,
     MAX_EARLY_POSITIONS,
     PITCH_LENGTH_M,
@@ -117,6 +118,7 @@ def compute_release_speed(
     fps: float,
     H: np.ndarray,
     debug: bool = False,
+    apply_scale_offset: bool = True,
 ) -> float | None:
     """
     Compute bowling speed (km/h) from the early segment of the delivery.
@@ -133,6 +135,13 @@ def compute_release_speed(
     4. Re-fit once after dropping residual outliers (>2.5σ) — guards
        against one mis-detected frame distorting the whole estimate.
     5. speed = hypot(vx, vy) * 3.6 → km/h.
+
+    `apply_scale_offset` is the ONLY place the upstream 2x/-20 heuristic lives.
+    It is a correction for a homography fitted to the wrong pitch (the fixed
+    broadcast template), where it is applied by default. `analyse_delivery`
+    passes False whenever the geometry was measured on THIS video, because a
+    measured quad already has the right scale and applying a hand-tuned
+    multiplier to it would corrupt a real number.
 
     Returns None if there isn't enough reliable data, or if the resulting
     speed is outside the physically-plausible sanity range — it never
@@ -180,19 +189,25 @@ def compute_release_speed(
 
     # ── CALIBRATION WARNING ──────────────────────────────────────────────────
     # Raw homography-derived speed reads ~60-80 km/h under broadcast perspective
-    # because one calibrated homography cannot fully absorb the camera's
-    # foreshortening. Upstream corrects this with a fixed 2x scale and a
-    # -20 km/h offset, tuned by hand against broadcast readings of 130-150 km/h.
+    # when the homography is the fixed template: one calibrated homography cannot
+    # fully absorb the camera's foreshortening. Upstream corrects this with a
+    # fixed 2x scale and a -20 km/h offset, tuned by hand against broadcast
+    # readings of 130-150 km/h.
     #
-    # THIS IS A HEURISTIC, NOT A PHYSICAL MEASUREMENT. The result is an ESTIMATE
-    # and must never be presented as a calibrated speed reading. Scale and offset
-    # are persisted into every analysis's calibration block and surfaced through
-    # the API (speed_calibrated=true, speed_method="homography_least_squares")
-    # so no consumer can mistake it for an exact value. A real fix requires
-    # per-video pitch-corner calibration.
+    # THAT HEURISTIC IS NOT A PHYSICAL MEASUREMENT and it is only correct for the
+    # geometry it was tuned against. When `apply_scale_offset` is False the
+    # caller has stated that the homography measures THIS video's pitch, so the
+    # fit is reported as metres per second × 3.6 with nothing bolted on. Either
+    # way the result is an ESTIMATE (the ball is in the air, not on the ground
+    # plane the homography describes) and is never marked calibrated. Scale and
+    # offset are persisted into every analysis's calibration block and surfaced
+    # through the API so no consumer can mistake either form for a reading.
     # See UNIFIED_ARCHITECTURE.md §10 decision D2.
     # ──────────────────────────────────────────────────────────────────────────
-    kmph = speed_mps * 3.6 * SPEED_CALIBRATION_SCALE + SPEED_CALIBRATION_OFFSET_KMH
+    if apply_scale_offset:
+        kmph = speed_mps * 3.6 * SPEED_CALIBRATION_SCALE + SPEED_CALIBRATION_OFFSET_KMH
+    else:
+        kmph = speed_mps * 3.6
 
     if debug:
         print(
@@ -343,19 +358,46 @@ def compute_bounce_angle(traj_list: list, bounce_idx: int | None, H: np.ndarray)
 
 
 # ── Delivery classification ───────────────────────────────────────────────────
-# Zone tables live in app.core.constants so the API can serve them to clients
-# instead of each frontend duplicating the enum strings (see UNIFIED_ARCHITECTURE.md
-# §5.3 and §9.1 /api/reference). Re-exported here for backwards compatibility.
+# Zone tables live in app.core.constants so this module classifies without
+# duplicating them (see UNIFIED_ARCHITECTURE.md §5.3 and §9.1). Re-exported here
+# for this module's historical importers.
 LENGTH_ZONES = _LENGTH_ZONES
 LINE_ZONES = _LINE_ZONES
 
 
 def classify_length(bounce_y: float, frame_height: int) -> str:
+    """PORTED RULE, image space. Kept for the upstream contract; see
+    `classify_length_m` for the rule the analytics actually publish."""
     y_frac = bounce_y / frame_height
     for label, lo, hi in LENGTH_ZONES:
         if lo <= y_frac < hi:
             return label
     return "Full"
+
+
+def classify_length_m(distance_from_crease_m: float | None) -> str | None:
+    """
+    Zone label for a bounce measured in METRES from the batting crease.
+
+    This is the classification the API publishes, and it only ever runs on
+    geometry that was measured on this video — see `LENGTH_ZONES_M` in
+    `core/constants.py` for the thresholds themselves.
+
+    Returns None rather than the nearest zone when the distance is missing or
+    falls outside the measured pitch (0..PITCH_LENGTH_M). A bounce that cannot
+    be placed on the pitch has no length, and clamping it to an edge zone would
+    turn "we do not know" into a confident wrong answer.
+    """
+    if distance_from_crease_m is None:
+        return None
+    d = float(distance_from_crease_m)
+    if not math.isfinite(d) or d < 0.0 or d > PITCH_LENGTH_M:
+        return None
+    for label, lo, hi in _LENGTH_ZONES_M:
+        if lo <= d < hi:
+            return label
+    # Exactly at the far edge of the pitch: the last zone is the closed one.
+    return _LENGTH_ZONES_M[-1][0]
 
 
 def classify_line(bounce_x: float, frame_width: int) -> str:

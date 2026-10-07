@@ -2,10 +2,9 @@
 helpers.py — Request parsing and result lookup shared by the route modules.
 
 These were private functions inside a single 660-line `endpoints.py`. They are
-here because three different route modules need them, and because they are the
-places where the API's *contract* is actually decided:
+here because the route modules need them, and because they are the places where
+the API's *contract* is actually decided:
 
-  * how a delivery id is parsed (`3` and `delivery_003` are both accepted)
   * when a missing result is a 404 and when it is a 409
   * what a rejected upload is told, and what is cleaned up before answering
   * how a media file is served with byte-range support
@@ -17,7 +16,6 @@ into the documented HTTP shapes.
 from __future__ import annotations
 
 import logging
-import re
 import shutil
 from pathlib import Path
 
@@ -36,31 +34,10 @@ log = logging.getLogger(__name__)
 # single upload cannot fill the disk.
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024
 
-_DELIVERY_REF = re.compile(r"^(?:delivery_)?(\d{1,6})$")
 
-
-def parse_delivery_id(raw: str) -> int:
+async def receive_upload(file: UploadFile) -> dict:
     """
-    Accept either `3` or `delivery_003` and return the integer id.
-
-    Clients index deliveries positionally while the media files are named
-    `delivery_003.mp4`, so both forms have to work in the same route. Anything else
-    is a 404-shaped client error rather than a silent coercion.
-    """
-    if isinstance(raw, int):  # FastAPI path params arrive as str; be forgiving
-        return raw
-    m = _DELIVERY_REF.match(str(raw).strip())
-    if not m:
-        raise HTTPException(
-            400,
-            f"Malformed delivery id '{raw}'. Use the integer id or 'delivery_003'.",
-        )
-    return int(m.group(1))
-
-
-async def receive_upload(file: UploadFile, field_name: str) -> dict:
-    """
-    Validate, persist and enqueue one upload. Shared by both route spellings.
+    Validate, persist and enqueue one upload.
 
     Returns the 202-shaped body. Never blocks on processing: the work happens on a
     background thread and the caller gets an `analysis_id` to poll.
@@ -129,10 +106,7 @@ async def receive_upload(file: UploadFile, field_name: str) -> dict:
         "bytes": written,
         # The documented routes, so a client does not have to assemble them.
         "status_url": f"/api/analysis/{job.analysis_id}/status",
-        "deliveries_url": f"/api/analysis/{job.analysis_id}/deliveries",
         "result_url": f"/api/analysis/{job.analysis_id}/result",
-        "progress_url": f"/api/analysis/{job.analysis_id}/progress",
-        "cancel_url": f"/api/analysis/{job.analysis_id}/cancel",
     }
 
 
@@ -160,24 +134,6 @@ def result_or_404(analysis_id: str) -> dict:
     return doc
 
 
-def find_delivery(doc: dict, delivery_id: int, analysis_id: str) -> dict:
-    """
-    Look up one delivery inside a result document.
-
-    Absent means quarantined by purity validation or never produced — the two are
-    not distinguishable from the outside, so the message must not pretend they
-    are. Delivery ids are never renumbered.
-    """
-    for d in doc.get("deliveries", []):
-        if d.get("delivery_id") == delivery_id:
-            return d
-    raise HTTPException(
-        404,
-        f"Delivery {delivery_id} is not in analysis {analysis_id}. It was either "
-        "quarantined by purity validation or never produced.",
-    )
-
-
 def serve_file(path: Path, media_type: str, what: str) -> FileResponse:
     if not path.is_file():
         raise HTTPException(404, f"{what} not found")
@@ -189,8 +145,6 @@ def serve_file(path: Path, media_type: str, what: str) -> FileResponse:
 
 __all__ = [
     "MAX_UPLOAD_BYTES",
-    "find_delivery",
-    "parse_delivery_id",
     "receive_upload",
     "result_or_404",
     "serve_file",

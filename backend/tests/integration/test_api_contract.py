@@ -1,17 +1,20 @@
 """
 test_api_contract.py — The contract the frontend is told to depend on.
 
-The pre-existing tests cover routes that existed. These cover the parts that were
-added or deliberately changed, each of which was previously either absent or
-wrong:
+Six routes, one spelling each, and nothing else routed. These tests pin the
+parts that were previously either absent, duplicated or wrong:
 
-  * the singular `/api/analyze` + `/api/analysis/{id}/...` routes;
-  * progress that is monotonic and derived from measured units;
+  * the exact route surface — the legacy plural paths, the per-delivery routes,
+    the SSE progress route, `/reference` and `/result/internal` are NOT routed;
+  * progress that is monotonic, derived from measured units, and published as
+    `progress` alone (no legacy `percent`, no unit counters, no event log);
   * the purity gate actually removing impure clips from the delivery list, which
     is what the real run showed was not happening (40 candidates exposed, 3 of
     them MULTIPLE_EVENTS);
-  * per-delivery responses that cannot mix two deliveries;
-  * uncalibrated analytics reaching the API as null rather than as numbers.
+  * per-delivery isolation inside the served array — one entry cannot carry
+    another delivery's trajectory;
+  * uncalibrated analytics reaching the API as null rather than as numbers;
+  * uploads rejected at the door, and media that is missing saying so.
 """
 
 from __future__ import annotations
@@ -26,14 +29,24 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.deps import JobRegistry, weighted_progress
-from app.api.helpers import parse_delivery_id
 from app.api.routes import router
 from app.core.config import PipelineConfig, Paths
 from app.core.constants import PIPELINE_STAGES, STAGE_PROGRESS_BANDS
 from app.pipeline.analysis_pipeline import PipelineResult, UnifiedPipeline
+from app.storage.persistence import read_json
 from tests.helpers import StubDetector, make_video
 
 W, H, FPS = 320, 180, 25.0
+
+# The whole public surface, as mounted under /api.
+DOCUMENTED_ROUTES = {
+    "/health",
+    "/analyze",
+    "/upload",
+    "/analysis/{analysis_id}/status",
+    "/analysis/{analysis_id}/result",
+    "/analysis/{analysis_id}/clips/{name}",
+}
 
 
 def client_for() -> TestClient:
@@ -42,37 +55,41 @@ def client_for() -> TestClient:
     return TestClient(app)
 
 
-class TestDocumentedRoutesExist(unittest.TestCase):
-    """The routes named in docs/API_CONTRACT.md must be routed."""
+class TestRouteSurface(unittest.TestCase):
+    """Exactly the documented routes exist. Not one alias more."""
 
     def setUp(self):
         self.paths = {
             r.path for r in router.routes if hasattr(r, "methods")
         }
 
-    def test_primary_routes_are_present(self):
-        for path in (
-            "/health",
-            "/analyze",
-            "/analysis/{analysis_id}/status",
+    def test_the_surface_is_exactly_the_documented_six(self):
+        self.assertEqual(self.paths, DOCUMENTED_ROUTES)
+
+    def test_removed_routes_are_not_routed(self):
+        removed = (
+            "/reference",
+            "/analyses",
+            "/analyses/{analysis_id}/status",
+            "/analyses/{analysis_id}/result",
+            "/analyses/{analysis_id}/result/internal",
+            "/analyses/{analysis_id}/progress",
+            "/analyses/{analysis_id}/cancel",
+            "/analyses/{analysis_id}/clips/{name}",
+            "/analyses/{analysis_id}/overlays/{name}",
+            "/analyses/{analysis_id}/tracking",
+            "/analysis/{analysis_id}/result/internal",
+            "/analysis/{analysis_id}/progress",
+            "/analysis/{analysis_id}/progress/json",
+            "/analysis/{analysis_id}/cancel",
             "/analysis/{analysis_id}/deliveries",
             "/analysis/{analysis_id}/deliveries/{delivery_id}",
             "/analysis/{analysis_id}/deliveries/{delivery_id}/clip",
             "/analysis/{analysis_id}/deliveries/{delivery_id}/overlay",
-            "/analysis/{analysis_id}/result",
-        ):
-            self.assertIn(path, self.paths, path)
-
-    def test_legacy_plural_routes_survive(self):
-        """The merged frontend still posts /api/upload and polls /api/analyses."""
-        for path in (
-            "/upload",
-            "/analyses/{analysis_id}/status",
-            "/analyses/{analysis_id}/result",
-            "/analyses/{analysis_id}/progress",
-            "/analyses/{analysis_id}/cancel",
-        ):
-            self.assertIn(path, self.paths, path)
+            "/analysis/{analysis_id}/trajectory/{delivery_id}",
+        )
+        for path in removed:
+            self.assertNotIn(path, self.paths, path)
 
     def test_health_publishes_the_stage_vocabulary(self):
         """A client must not have to hardcode stage names to draw a progress bar."""
@@ -81,20 +98,6 @@ class TestDocumentedRoutesExist(unittest.TestCase):
         self.assertEqual(tuple(body["stages"]), PIPELINE_STAGES)
         self.assertIn("schema_version", body)
         self.assertIn("pipeline_version", body)
-
-
-class TestDeliveryIdParsing(unittest.TestCase):
-    """Both `3` and `delivery_003` address the same delivery; junk does not."""
-
-    def test_both_spellings_resolve_to_the_same_id(self):
-        self.assertEqual(parse_delivery_id("3"), 3)
-        self.assertEqual(parse_delivery_id("delivery_003"), 3)
-        self.assertEqual(parse_delivery_id("delivery_3"), 3)
-
-    def test_a_malformed_id_is_a_client_error(self):
-        for bad in ("abc", "delivery_", "../etc/passwd", "delivery_1; DROP", ""):
-            with self.assertRaises(Exception, msg=bad):
-                parse_delivery_id(bad)
 
 
 class TestProgressIsMonotonicAndMeasured(unittest.TestCase):
@@ -132,7 +135,7 @@ class TestProgressIsMonotonicAndMeasured(unittest.TestCase):
         Each stage counts its own units, so the handoff from tracking (100% of
         frames) to shot classification (0 of N deliveries) computes a *smaller*
         percentage than tracking had reached. Without a high-water mark a client
-        drawing `percent` would visibly rewind mid-analysis.
+        drawing `progress` would visibly rewind mid-analysis.
         """
         registry = JobRegistry()
         job = registry.create(source_name="t.mp4")
@@ -152,9 +155,8 @@ class TestProgressIsMonotonicAndMeasured(unittest.TestCase):
         self.assertEqual(job.percent, 96.0)
         cb("persist", 1, 1, "written")
         self.assertEqual(job.percent, 100.0)
-
-        seen = [e.percent for e in job.events if e.percent is not None]
-        self.assertEqual(seen, sorted(seen), "event log must also be monotonic")
+        # …and the published number is the same monotonic value.
+        self.assertEqual(job.as_dict()["progress"], 100.0)
 
     def test_interleaved_work_is_a_substage_not_a_fake_phase(self):
         """
@@ -182,23 +184,29 @@ class TestProgressIsMonotonicAndMeasured(unittest.TestCase):
         self.assertEqual(job.substage, "validation")
         self.assertEqual(job.percent, before)
 
-    def test_units_report_the_real_counts(self):
+    def test_the_status_document_publishes_progress_and_nothing_internal(self):
+        """
+        One number for the bar (`progress`), one vocabulary for the stage, and
+        none of the machinery behind them: no legacy `percent`, no unit
+        counters, no internal phase names, no event log, no cancel flag.
+        """
         registry = JobRegistry()
         job = registry.create(source_name="t.mp4")
         cb = registry.progress_cb(job.analysis_id)
         cb("tracking", 1204, 13565, "frame 1204")
-        self.assertEqual(
-            job.as_dict()["units"]["tracking"], {"done": 1204, "total": 13565}
-        )
-
-    def test_percent_and_progress_are_both_published(self):
-        """`percent` is the legacy field the existing frontend reads."""
-        registry = JobRegistry()
-        job = registry.create(source_name="t.mp4")
-        cb = registry.progress_cb(job.analysis_id)
-        cb("tracking", 100, 1000, "frame 100")
         body = job.as_dict()
-        self.assertEqual(body["percent"], body["progress"])
+        self.assertEqual(
+            set(body),
+            {
+                "analysis_id", "status", "source_name", "created_at",
+                "started_at", "finished_at", "stage", "substage", "progress",
+                "frames_done", "frames_total", "detail", "error",
+            },
+        )
+        self.assertEqual(body["progress"], 10.1)
+        self.assertNotIn("percent", body)
+        self.assertNotIn("phase", body)
+        self.assertEqual(body["stage"], "tracking")
 
     def test_status_of_an_unknown_analysis_is_404_on_the_documented_route(self):
         """A typo must not read as 'still processing'."""
@@ -311,7 +319,7 @@ class TestPurityGateRemovesImpureClips(unittest.TestCase):
 
 
 class TestQuarantinedRecordsAreNotServedAsDeliveries(unittest.TestCase):
-    """End to end: a quarantined id 404s on the delivery routes."""
+    """End to end: a quarantined id never appears in the served array."""
 
     @classmethod
     def setUpClass(cls):
@@ -326,6 +334,9 @@ class TestQuarantinedRecordsAreNotServedAsDeliveries(unittest.TestCase):
             source_video=str(cls.video), paths=cls.paths, progress=None
         )
         cls.client = client_for()
+        cls.served = cls.client.get(
+            f"/api/analysis/{cls.paths.analysis_id}/result"
+        ).json()["deliveries"]
 
     @classmethod
     def tearDownClass(cls):
@@ -340,28 +351,31 @@ class TestQuarantinedRecordsAreNotServedAsDeliveries(unittest.TestCase):
         self.assertTrue(self.result.deliveries)
 
     def test_every_served_delivery_passed_validation(self):
-        for d in self.result.deliveries:
-            classification = (d.validation or {}).get("classification")
-            self.assertIn(
-                classification, {"SINGLE_EVENT", "AMBIGUOUS"}, d.delivery_id
-            )
+        served_ids = [d["id"] for d in self.served]
+        self.assertEqual(served_ids, [d.delivery_id for d in self.result.deliveries])
+        for d in self.served:
+            flags = set(d["quality"]["flags"])
+            self.assertNotIn("multiple_events_in_clip", flags, d["id"])
+            self.assertNotIn("no_event_in_clip", flags, d["id"])
 
-    def test_a_quarantined_id_is_not_reachable_as_a_delivery(self):
+    def test_a_quarantined_id_is_not_in_the_served_array(self):
         if not self.result.quarantined:
             self.skipTest("this synthetic run quarantined nothing")
-        qid = self.result.quarantined[0]["delivery_id"]
+        served_ids = {d["id"] for d in self.served}
+        for record in self.result.quarantined:
+            self.assertNotIn(record["delivery_id"], served_ids)
+
+    def test_the_quarantine_list_survives_in_the_persisted_document(self):
+        """Diagnostics stay on disk: complete, and unreachable over HTTP."""
+        document = read_json(self.paths.result_json)
+        self.assertIn("quarantine", document)
+        self.assertIn("quarantined", document["summary"])
         self.assertEqual(
-            self.client.get(f"/api/analysis/{self.paths.analysis_id}/deliveries/{qid}")
-            .status_code,
+            self.client.get(
+                f"/api/analysis/{self.paths.analysis_id}/result/internal"
+            ).status_code,
             404,
         )
-
-    def test_the_quarantine_list_is_still_served_for_diagnostics(self):
-        body = self.client.get(
-            f"/api/analysis/{self.paths.analysis_id}/result/internal"
-        ).json()
-        self.assertIn("quarantine", body)
-        self.assertIn("quarantined", body["summary"])
 
 
 class TestPerDeliveryResponsesCannotMixDeliveries(unittest.TestCase):
@@ -380,6 +394,9 @@ class TestPerDeliveryResponsesCannotMixDeliveries(unittest.TestCase):
             source_video=str(cls.video), paths=cls.paths, progress=None
         )
         cls.client = client_for()
+        cls.served = cls.client.get(
+            f"/api/analysis/{cls.paths.analysis_id}/result"
+        ).json()["deliveries"]
 
     @classmethod
     def tearDownClass(cls):
@@ -393,28 +410,19 @@ class TestPerDeliveryResponsesCannotMixDeliveries(unittest.TestCase):
     def test_the_fixture_produced_two_deliveries(self):
         self.assertGreaterEqual(len(self.result.deliveries), 2)
 
-    def test_each_delivery_response_contains_only_its_own_fields(self):
+    def test_each_served_delivery_carries_only_its_own_trajectory(self):
         ids = [d.delivery_id for d in self.result.deliveries]
-        for did in ids:
-            body = self.client.get(
-                f"/api/analysis/{self.paths.analysis_id}/deliveries/{did}"
-            ).json()
-            self.assertEqual(body["delivery_id"], did)
-            for other in ids:
-                if other != did:
-                    self.assertNotEqual(
-                        body["trajectory"],
-                        self.result.deliveries[ids.index(other)]
-                        .as_dict()["trajectory"],
-                    )
-
-    def test_the_bare_integer_and_padded_spellings_return_the_same_delivery(self):
-        did = self.result.deliveries[0].delivery_id
-        base = f"/api/analysis/{self.paths.analysis_id}/deliveries/"
-        self.assertEqual(
-            self.client.get(f"{base}{did}").json(),
-            self.client.get(f"{base}delivery_{did:03d}").json(),
-        )
+        self.assertEqual([d["id"] for d in self.served], ids)
+        for index, body in enumerate(self.served):
+            for other_index in range(len(self.served)):
+                if other_index == index:
+                    continue
+                self.assertNotEqual(
+                    body["trajectory"],
+                    self.served[other_index]["trajectory"],
+                    f"delivery {body['id']} carries delivery "
+                    f"{self.served[other_index]['id']}'s trajectory",
+                )
 
     def test_a_trajectory_never_references_frames_outside_its_own_clip(self):
         for d in self.result.deliveries:
@@ -447,6 +455,10 @@ class TestUncalibratedAnalyticsReachTheApiAsNull(unittest.TestCase):
             source_video=str(cls.video), paths=cls.paths, progress=None
         )
         cls.client = client_for()
+        cls.served = cls.client.get(
+            f"/api/analysis/{cls.paths.analysis_id}/result"
+        ).json()["deliveries"]
+        cls.document = read_json(cls.paths.result_json)
 
     @classmethod
     def tearDownClass(cls):
@@ -460,37 +472,30 @@ class TestUncalibratedAnalyticsReachTheApiAsNull(unittest.TestCase):
     def test_the_fixture_produced_a_delivery(self):
         self.assertTrue(self.result.deliveries)
 
-    def test_no_delivery_carries_a_speed_line_length_or_swing(self):
-        for d in self.result.deliveries:
-            b = d.as_dict()["bowling"]
-            self.assertIsNone(b["speed_kmh"], d.delivery_id)
-            self.assertIsNone(b["length"], d.delivery_id)
-            self.assertIsNone(b["line"], d.delivery_id)
-            self.assertIsNone(b["swing"], d.delivery_id)
-            self.assertFalse(b["speed_calibrated"])
-            self.assertFalse(b["geometry_calibrated"])
+    def test_no_served_delivery_carries_a_speed_line_length_or_swing(self):
+        for delivery in self.served:
+            b = delivery["bowling"]
+            self.assertIsNone(b["speed_kmh"], delivery["id"])
+            self.assertIsNone(b["length"], delivery["id"])
+            self.assertIsNone(b["line"], delivery["id"])
+            self.assertIsNone(b["swing"], delivery["id"])
+            self.assertFalse(b["calibrated"])
 
     def test_no_bounce_carries_ground_plane_metres(self):
-        for d in self.result.deliveries:
-            bounce = d.as_dict()["bounce"]
-            self.assertIsNone(bounce["ground_x_m"])
-            self.assertIsNone(bounce["ground_y_m"])
+        for delivery in self.served:
+            bounce = delivery["bounce"]
+            self.assertIsNone(bounce["ground_x_m"], delivery["id"])
+            self.assertIsNone(bounce["ground_y_m"], delivery["id"])
             # Pixels are real and must survive.
-            self.assertIsNotNone(bounce["x_px"])
+            self.assertIsNotNone(bounce["x"], delivery["id"])
 
     def test_the_summary_reports_a_null_mean_rather_than_guessing(self):
-        body = self.client.get(
-            f"/api/analysis/{self.paths.analysis_id}/result/internal"
-        ).json()
-        self.assertIsNone(body["summary"]["mean_speed_kmh"])
-        self.assertEqual(body["summary"]["with_speed"], 0)
+        self.assertIsNone(self.document["summary"]["mean_speed_kmh"])
+        self.assertEqual(self.document["summary"]["with_speed"], 0)
 
     def test_the_persisted_config_records_the_uncalibrated_state(self):
-        body = self.client.get(
-            f"/api/analysis/{self.paths.analysis_id}/result/internal"
-        ).json()
-        self.assertFalse(body["config"]["geometry_calibrated"])
-        self.assertIsNone(body["config"]["pitch_corners_px"])
+        self.assertFalse(self.document["config"]["geometry_calibrated"])
+        self.assertIsNone(self.document["config"]["pitch_corners_px"])
 
     def test_a_calibrated_config_is_recorded_as_calibrated(self):
         """
@@ -588,6 +593,16 @@ class TestUploadValidation(unittest.TestCase):
         after = {p.name for p in RUNS_DIR.iterdir()} if RUNS_DIR.exists() else set()
         self.assertEqual(after - before, set(), "a rejected upload left debris")
 
+    def test_the_other_upload_spelling_is_routed_too(self):
+        """`POST /api/upload` with a `file=` field is the same handler."""
+        bogus = self.dir / "notes.txt"
+        bogus.write_bytes(b"not a video")
+        with open(bogus, "rb") as fh:
+            response = self.client.post(
+                "/api/upload", files={"file": ("notes.txt", fh, "text/plain")}
+            )
+        self.assertEqual(response.status_code, 400)
+
 
 class TestMediaRoutesAreHonest(unittest.TestCase):
     """A missing artefact says so; it is never substituted."""
@@ -597,28 +612,26 @@ class TestMediaRoutesAreHonest(unittest.TestCase):
 
     def test_a_missing_clip_is_404_with_an_explanation(self):
         response = self.client.get(
-            "/api/analysis/does_not_exist/deliveries/1/clip"
+            "/api/analysis/does_not_exist/clips/delivery_001.mp4"
         )
         self.assertEqual(response.status_code, 404)
         self.assertIn("Clip", response.json()["detail"])
 
-    def test_a_missing_overlay_is_404_not_the_clip(self):
-        """Serving the clip as an overlay would draw no trajectory and imply one."""
+    def test_an_overlay_route_does_not_exist(self):
+        """Overlays are internal artefacts; the API serves clips only."""
         response = self.client.get(
-            "/api/analysis/does_not_exist/deliveries/1/overlay"
+            "/api/analysis/does_not_exist/overlays/delivery_001.mp4"
         )
         self.assertEqual(response.status_code, 404)
-        self.assertIn("overlay", response.json()["detail"].lower())
 
-    def test_a_malformed_delivery_id_is_a_client_error(self):
-        response = self.client.get(
-            "/api/analysis/does_not_exist/deliveries/not-a-number"
-        )
-        self.assertEqual(response.status_code, 400)
+    def test_a_bad_clip_name_is_a_client_error(self):
+        for bad in ("delivery_001.mov", "etc_passwd", "delivery_1.txt"):
+            response = self.client.get(f"/api/analysis/x/clips/{bad}")
+            self.assertEqual(response.status_code, 400, bad)
 
-    def test_the_legacy_name_based_media_routes_reject_traversal(self):
-        for bad in ("../../secret", "delivery_001.mov", "..%2F..%2Fsecret"):
-            response = self.client.get(f"/api/analyses/x/clips/{bad}")
+    def test_path_traversal_never_reaches_the_filesystem(self):
+        for bad in ("..%2F..%2Fsecret", "%2e%2e%2fsecret"):
+            response = self.client.get(f"/api/analysis/x/clips/{bad}")
             self.assertIn(response.status_code, (400, 404), bad)
 
 

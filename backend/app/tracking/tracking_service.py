@@ -54,6 +54,7 @@ import numpy as np
 from ..core.config import PipelineConfig, Paths
 from ..core.constants import (
     PITCH_CORRIDOR,
+    PITCH_EVENT_GUARD_FRAMES,
     MAX_MISSED,
     MIN_DELIVERY_FRAMES,
     PIPELINE_VERSION,
@@ -69,6 +70,11 @@ from ..schemas.tracking import (
 from ..storage.persistence import atomic_write_json
 from ..analytics.bowling import analyse_delivery
 from ..analytics.calibration import calibration_metadata, make_homography
+from ..analytics.pitch_geometry import (
+    build_pitch_geometry,
+    flight_to_bounce,
+)
+from ..pitch.service import PitchService
 from ..segmentation.purity_validator import (
     ClipValidator,
     SINGLE_EVENT,
@@ -237,6 +243,15 @@ class TrackingResult:
     # detector-bound, but "detector-bound" is a claim, and this turns it into a
     # measurement the report can cite.
     stage_seconds: dict = field(default_factory=dict)
+    # How the OPTIONAL pitch keypoint detector ran: whether it was configured,
+    # how many submissions/detections/failures it had and why it stopped. Null
+    # until the pass records it. Contains configuration, never a credential.
+    pitch_summary: Optional[dict] = None
+    # Ground-plane geometry derived from that detector, per delivery: how many
+    # deliveries got a real quad→metres mapping (and therefore a length and a
+    # speed), how many were refused and why, and the stated assumptions. Empty
+    # when no pitch detector ran. Nothing here is a credential.
+    pitch_geometry_stats: dict = field(default_factory=dict)
 
     def time_stage(self, name: str, seconds: float) -> None:
         self.stage_seconds[name] = (
@@ -270,8 +285,12 @@ class TrackingResult:
                 "reported_frame_count": self.source_caps.get("reported_frame_count"),
             },
             "calibration": calibration_metadata(
-                self.pitch_corners_px if self.geometry_calibrated else None
+                self.pitch_corners_px if self.geometry_calibrated else None,
+                pitch_geometry=self.pitch_geometry_stats,
             ),
+            # The OTHER, optional calibration: pitch keypoints found by the
+            # hosted model. Null until the pass has run; never a credential.
+            "pitch_detection": self.pitch_summary,
             "config": config.as_metadata(),
             "performance": {
                 "wall_seconds": round(self.wall_seconds, 3),
@@ -345,8 +364,16 @@ class TrackingService:
     it once, and returns a TrackingResult.
     """
 
-    def __init__(self, config: Optional[PipelineConfig] = None) -> None:
+    def __init__(
+        self,
+        config: Optional[PipelineConfig] = None,
+        *,
+        pitch_service: Optional[PitchService] = None,
+    ) -> None:
         self.config = config or PipelineConfig()
+        # Injected so a test can drive the pitch state machine without a
+        # network. Left alone, `_run` builds one from the environment.
+        self._pitch_service = pitch_service
 
     # ── Public API ───────────────────────────────────────────────────────────
     def analyse(
@@ -422,6 +449,16 @@ class TrackingService:
         )
         tracker = BallTracker()
 
+        # Optional pitch keypoint detection. One service for the whole pass, so
+        # the calibration history is continuous across deliveries. Without a
+        # ROBOFLOW_API_KEY this object is inert: `on_frame` returns on the first
+        # check and every snapshot honestly reports `no_calibration`.
+        pitch = (
+            self._pitch_service
+            if self._pitch_service is not None
+            else PitchService(width=width, height=height)
+        )
+
         # The segmenter owns delivery identity. The Kalman filter smooths the ball
         # between frames; it does not decide where one batting event ends.
         # Boundaries come from here, from the provenance this same pass recorded,
@@ -467,6 +504,7 @@ class TrackingService:
                 "path": str(video_path),
             },
             geometry_calibrated=geometry_calibrated,
+            pitch_summary=pitch.summary(),
         )
 
         pre_roll = cfg.pre_roll_frames(fps)
@@ -500,6 +538,16 @@ class TrackingService:
         # Speeds computed so far in this analysis, used ONLY if the operator
         # explicitly enables imputation (decision D1 — off by default).
         speeds_seen: list[float] = []
+
+        # Ground geometry the pitch keypoint quad actually delivered, counted as
+        # it happens. Attached to `result` immediately, so every incremental
+        # tracking.json write carries the running truth instead of an empty block.
+        pitch_geom_stats: dict = {
+            "deliveries": 0,
+            "deliveries_with_geometry": 0,
+            "rejections": {},
+        }
+        result.pitch_geometry_stats = pitch_geom_stats
 
         # ── Fragment merging ─────────────────────────────────────────────────
         # A candidate cannot be turned into a delivery until we know whether the
@@ -749,6 +797,26 @@ class TrackingService:
                     )
                     return
 
+            # ── Ground geometry for THIS delivery ──────────────────────────
+            # One quad measured while this ball was in the air describes this
+            # clip (a delivery is one continuous shot), and the ball's own
+            # travel — release to bounce, in image space — says which end of
+            # that quad the batter stands at. Both readings go into
+            # `delivery.pitch`, so the geometry a client draws with and the
+            # geometry the analytics measured are provably the same one.
+            window_start = int(segment.start_frame)
+            window_end = int(segment.ball_lost_frame or segment.end_frame)
+            pitch_block = pitch.snapshot_for_delivery(window_start, window_end)
+            detected_flight = [
+                (float(p.x), float(p.y))
+                for p in (points or [])
+                if p.source == "detected"
+            ]
+            pitch_geom, pitch_geom_reason = build_pitch_geometry(
+                pitch.calibration_for_delivery(window_start, window_end),
+                flight_to_bounce(detected_flight),
+            )
+
             delivery = self._finalise(
                 delivery_id=delivery_id,
                 segment=segment,
@@ -770,6 +838,7 @@ class TrackingService:
                 purity=purity,
                 segments=segmenter.events,
                 on_purity_reject=reject_delivery,
+                pitch_geometry=pitch_geom,
             )
             delivery_id += 1
 
@@ -778,6 +847,28 @@ class TrackingService:
                 # written, no record was appended; the evidence is filed as a
                 # horizon so the neighbourhood can still be segmented correctly.
                 return
+
+            delivery.pitch = pitch_block
+            pitch_geom_stats["deliveries"] += 1
+            if pitch_geom is not None:
+                pitch_geom_stats["deliveries_with_geometry"] += 1
+                pitch_block["map_homography"] = [
+                    [round(float(v), 8) for v in row]
+                    for row in pitch_geom.map_homography
+                ]
+                pitch_block["orientation"] = {
+                    "axis": pitch_geom.axis,
+                    "batting_end": pitch_geom.batting_end,
+                    "travel_delta": round(pitch_geom.travel_delta, 4),
+                    "calibration_frame": pitch_geom.calibration_frame,
+                }
+            else:
+                key = pitch_geom_reason or "unavailable"
+                pitch_geom_stats["rejections"][key] = (
+                    pitch_geom_stats["rejections"].get(key, 0) + 1
+                )
+                pitch_block["orientation"] = None
+                pitch_block["map_homography"] = None
 
             result.deliveries.append(delivery)
             if delivery.bowling.speed_kmh is not None and not delivery.bowling.speed_imputed:
@@ -837,6 +928,13 @@ class TrackingService:
             else:
                 consecutive_black_frames = 0
 
+            # Pitch corridor: center 40% horizontally, middle 60% vertically —
+            # the SAME box the pitch-motion signal below measures, and the box
+            # in which a cricket pitch is readable at all. Its mean luminance
+            # is what tells the pitch detector whether there is a bright,
+            # washed-out surface to detect before it spends a round trip.
+            corridor_lum = float(np.mean(gray_small[9:36, 24:56]))
+
             # Scene cut and motion
             is_scene_cut = False
             motion_energy = 0.0
@@ -855,6 +953,36 @@ class TrackingService:
             ring.push(frame_number, frame)
             t_ring = time.perf_counter()
             result.time_stage("ring_encode", t_ring - t_decode)
+
+            # 2b. Optional pitch keypoint detection. Offered on EVERY frame and
+            #     dropped by the service to one submission per interval; the put
+            #     is non-blocking and nothing below ever waits for a response.
+            #     The model runs on a worker thread, so this costs a pointer
+            #     copy at most — and a single boolean check when no API key is
+            #     configured, which is the default.
+            #
+            #     The hints are the loop's OWN per-frame signals, already
+            #     computed above: the corridor's brightness (is there a pitch to
+            #     read at all), whether a delivery is in progress, whether this
+            #     frame is a cut or a black frame. They decide WHICH frame is
+            #     offered — in `interval` mode they are ignored entirely — and
+            #     never what a response means. `near_event` is the guard that
+            #     runs past a delivery: the clip window outlives the segmenter's
+            #     event, and the model answers on those trailing frames.
+            last_event = segmenter.events[-1] if segmenter.events else None
+            near_event = (
+                last_event is not None
+                and frame_number - last_event.end_frame <= PITCH_EVENT_GUARD_FRAMES
+            )
+            pitch.on_frame(
+                frame_number,
+                frame,
+                corridor_lum=corridor_lum,
+                event_open=segmenter.open_event is not None,
+                near_event=near_event,
+                scene_cut=is_scene_cut,
+                black=is_black,
+            )
 
             # 3. Detection — the only YOLO call in the system.
             cx, cy, conf = detector.detect_with_confidence(frame)
@@ -1104,6 +1232,13 @@ class TrackingService:
                 )
 
         # ── End of video: an event may still be open ──────────────────────────
+        # Drain the pitch detector BEFORE any further finalisation: one frame may
+        # still be queued, and every delivery snapshot taken from here on reads
+        # the state it leaves behind. Bounded join — a hung round trip is
+        # abandoned (the worker is a daemon) rather than waited on, because a
+        # detection that cannot answer in five seconds will not answer at all.
+        pitch.stop()
+        result.pitch_summary = pitch.summary()
         # Closed, not deleted, and queued like every other candidate so it gets
         # the same merge opportunity. If it holds too few confirmed detections to
         # be a delivery, `emit_event` records why and drops it.
@@ -1200,6 +1335,7 @@ class TrackingService:
         purity: Optional[ClipValidator] = None,
         segments: Optional[list] = None,
         on_purity_reject=None,
+        pitch_geometry=None,
     ) -> Optional[Delivery]:
         """
         Build the delivery record from one finished batting event.
@@ -1232,6 +1368,12 @@ class TrackingService:
         # homography publish 33 fabricated speeds on real_cricket.mp4 while the
         # analysis-level calibration block simultaneously claimed the geometry was
         # uncalibrated.
+        #
+        # `pitch_geometry` is the delivery's own quad, detected on this footage.
+        # It is the SECOND way geometry becomes real (after operator-measured
+        # corners) and it carries the batter's end, which is what turns a metre
+        # scale into a length. When it is present, `analyse_delivery` treats the
+        # geometry as calibrated and drops the 2x/-20 speed heuristic.
         release_frame, bounce, bowling, samples, flags = analyse_delivery(
             trajectory,
             homography=homography,
@@ -1241,6 +1383,7 @@ class TrackingService:
             impute_missing_speeds=cfg.impute_missing_speeds,
             speeds_from=speeds_seen,
             geometry_calibrated=cfg.geometry_calibrated,
+            pitch_geometry=pitch_geometry,
         )
 
         # Trajectory quality is a judgement about the DATA, made from the data.
@@ -1431,7 +1574,12 @@ class TrackingService:
             frame_map.assign_clip_frames(trajectory)
             delivery.clip = frame_map
             delivery.clip_path = str(paths.clip_path(delivery_id))
-            delivery.clip_url = f"{paths.public_prefix}/clips/delivery_{delivery_id:03d}.mp4"
+            # The one public URL for these bytes: the clips route. Never a path,
+            # and never a static mount that would expose the data directory.
+            delivery.clip_url = (
+                f"/api/analysis/{paths.analysis_id}/clips/"
+                f"delivery_{delivery_id:03d}.mp4"
+            )
         except Exception as exc:
             clips.errors[delivery_id] = str(exc)
             delivery.quality.flags.append("clip_write_failed")

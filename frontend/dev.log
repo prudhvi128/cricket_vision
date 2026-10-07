@@ -1,0 +1,124 @@
+
+> vite_react_shadcn_ts@0.0.0 dev
+> vite
+
+Port 8080 is in use, trying another one...
+
+  [32m[1mVITE[22m v5.4.19[39m  [2mready in [0m[1m268[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m8081[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.29.13:[1m8081[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+Browserslist: browsers data (caniuse-lite) is 16 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[2m7:03:05 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Upload.tsx, /src/pages/Results.tsx, /src/pages/Processing.tsx[22m
+[2m7:03:27 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Upload.tsx, /src/pages/Results.tsx, /src/pages/Processing.tsx[22m
+[2m7:03:47 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Upload.tsx, /src/pages/Results.tsx, /src/pages/Processing.tsx[22m
+[2m7:03:58 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Upload.tsx, /src/pages/Results.tsx, /src/pages/Processing.tsx[22m
+[2m7:04:07 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Upload.tsx, /src/index.css[22m
+[2m7:04:40 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Upload.tsx, /src/index.css[22m
+[2m7:05:00 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Processing.tsx, /src/index.css[22m
+[2m7:05:14 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Processing.tsx, /src/index.css[22m
+[2m7:05:35 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Processing.tsx, /src/index.css[22m
+[2m7:06:29 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Results.tsx, /src/index.css[22m
+[2m7:06:48 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Results.tsx, /src/index.css[22m
+[2m7:07:20 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Results.tsx, /src/index.css[22m
+[2m7:07:58 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/SummaryStats.tsx, /src/index.css[22m
+[2m7:08:26 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PitchMap.tsx, /src/index.css[22m
+[2m7:08:38 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PitchMap.tsx, /src/index.css[22m
+[2m7:08:49 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PitchMap.tsx, /src/index.css[22m
+[2m7:09:02 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/BallAnalysisSection.tsx, /src/index.css[22m
+[2m7:09:21 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/BallAnalysisCard.tsx, /src/index.css[22m
+[2m7:12:52 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/textarea.tsx[22m
+[2m7:12:53 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/command.tsx[22m
+[2m7:12:53 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtailwind.config.ts[22m
+[2m7:13:08 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtailwind.config.ts[22m
+[2m7:13:37 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/BallAnalysisSection.tsx, /src/index.css[22m
+[2m7:13:47 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/BallAnalysisSection.tsx, /src/index.css[22m
+[2m7:17:42 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Results.tsx, /src/index.css[22m
+[2m9:56:16 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Index.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/BallAnalysisCard.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/accordion.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Index.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/BallAnalysisCard.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/BallAnalysisSection.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/NavLink.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Navbar.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PitchMap.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PitchOverlay.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/SummaryStats.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ThemeProvider.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/TrajectoryChart.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/accordion.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/alert-dialog.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/alert.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/aspect-ratio.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/avatar.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/badge.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/breadcrumb.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/button.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/calendar.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/card.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/carousel.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/chart.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/checkbox.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/collapsible.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/command.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/context-menu.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/dialog.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/drawer.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/dropdown-menu.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/form.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/hover-card.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/input-otp.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/input.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/label.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/menubar.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/navigation-menu.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/pagination.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/hooks/use-mobile.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Upload.tsx, /src/pages/Results.tsx, /src/pages/Processing.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Index.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/test/adaptDelivery.test.ts[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/popover.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/progress.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/radio-group.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/resizable.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/scroll-area.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/select.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/separator.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/sheet.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/sidebar.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/skeleton.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/slider.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/sonner.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/switch.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/table.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/tabs.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/textarea.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/toast.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/toaster.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/toggle-group.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/toggle.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/tooltip.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/use-toast.ts[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/ui/toaster.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtailwind.config.ts[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/ui/tooltip.tsx, /src/components/ui/button.tsx, /src/components/ui/toast.tsx, /src/components/ui/skeleton.tsx, /src/components/ui/input.tsx, /src/components/ui/select.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/NotFound.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Processing.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Results.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Upload.tsx, /src/index.css[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/vite-env.d.ts[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/test/analysisResultIsolation.test.ts[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/test/example.test.ts[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/test/newAnalysisClearsPrevious.test.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/test/resultsCurrentAnalysis.test.tsx[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/test/setup.ts[22m
+[2m9:56:17 pm[22m [36m[1m[vite][22m[39m server restarted.

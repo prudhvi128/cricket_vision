@@ -466,6 +466,13 @@ video again.
 
 ### 5.3 Normalised coordinates: the pitch-map contract
 
+> **Superseded in part — see `docs/API_CONTRACT.md` §3 and §6.** What shipped: the pitch map plots
+> `trajectory.points[].pitch_position` at the bounce frame, oriented by the served
+> `pitch.orientation`, and never falls back to frame coordinates. `classify_length` is no longer the
+> published length — it is metres from the batting crease (`LENGTH_ZONES_M`), and `classify_line`
+> stays image-space because a quad says nothing about leg and off. Rule 2 below (omit the key rather
+> than send `null`) still holds, and is enforced by `api.ts`.
+
 `PitchMap.tsx` consumes `bounce_x` / `bounce_y` as **normalised 0–1** values and applies its own
 perspective transform. Two rules follow, and both must be enforced by the backend:
 

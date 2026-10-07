@@ -1,0 +1,73 @@
+{
+  "after": {
+    "active_seconds": 591.631,
+    "analysis_id": "f4ca495c32404e9c",
+    "attempts": 727,
+    "backpressure": {
+      "cooldown_ms": 500.0,
+      "in_flight": false,
+      "max_attempts_per_sec": 2.0
+    },
+    "calibration_updates": 24,
+    "categories": {
+      "detected": 24,
+      "no_keypoints": 674,
+      "refused": 29
+    },
+    "gated": {
+      "spacing": 10852
+    },
+    "latency_ms": {
+      "max": 4414.36,
+      "mean": 806.01,
+      "n": 727,
+      "p50": 714.14,
+      "p95": 1561.93
+    },
+    "local_refusals": 29,
+    "max_attempts_per_sec": 2.0,
+    "no_keypoints": 674,
+    "other_failures": 0,
+    "processed_per_s": 1.227,
+    "queue": {
+      "capacity": 2,
+      "evictions": 1986,
+      "max_depth_observed": 2
+    },
+    "queue_drops": 1986,
+    "queue_wait_ms": {
+      "max": 2726.77,
+      "mean": 349.76,
+      "n": 727,
+      "p50": 297.94,
+      "p95": 788.37
+    },
+    "refusals_by_reason": {
+      "keypoint_hull_too_small": 15,
+      "only_0_usable_keypoints": 4,
+      "only_1_usable_keypoints": 1,
+      "only_2_usable_keypoints": 9
+    },
+    "roboflow_non_200": {},
+    "roboflow_requests": 727,
+    "roboflow_transport_errors": 0,
+    "runtime_s": 700.4,
+    "sampling_mode": "interval",
+    "submitted": 2713,
+    "submitted_per_s": 4.6,
+    "valid_detections": 24
+  },
+  "before": {
+    "attempts": 863,
+    "detections": 24,
+    "failures": 799,
+    "processed_per_s": 2.026,
+    "queue_drops": 1850,
+    "refusals": 40,
+    "run": "8f5f9db22790407f",
+    "submitted": 2713,
+    "submitted_per_s": 4.941
+  },
+  "checks": [],
+  "mode": "interval"
+}

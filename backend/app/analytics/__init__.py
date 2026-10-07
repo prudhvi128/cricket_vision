@@ -10,7 +10,6 @@ Ownership split inside this package:
   trajectory.py   Trajectory maths: speed, bounce, swing, release/bounce angle,
                   and length/line classification from PIXEL coordinates.
   bowling.py      Assembles the above into one per-delivery `Bowling` result.
-  pitch_map.py    SVG pitch map rendering for the overlay and API response.
 
 The distinction that matters: `trajectory.py` works in pixel space and metres
 along the path; `bowling.py` decides what may be *claimed*. Neither re-runs

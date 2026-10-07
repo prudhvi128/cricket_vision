@@ -30,6 +30,13 @@ ultralytics==8.4.162
 torch==2.5.1
 torchvision==0.20.1
 
+# ── Optional pitch keypoint detection (Roboflow) ──────────────────────────────
+# Only needed when ROBOFLOW_API_KEY is set; without a key the feature is inert
+# and neither package is imported at runtime (app/pitch imports them lazily).
+# inference-sdk pins nothing that overlaps numpy/opencv/torch above.
+inference-sdk==1.7.3
+python-dotenv==1.2.3
+
 # ── Development and verification ──────────────────────────────────────────────
 # httpx backs starlette's TestClient, which the integration tests drive the API
 # through. It is a test dependency, not a runtime one.

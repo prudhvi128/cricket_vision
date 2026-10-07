@@ -27,11 +27,26 @@ from .constants import (
     MAX_PRE_ROLL_SECONDS,
     MIN_DELIVERY_FRAMES,
     MIN_FRAMES_BETWEEN_DELIVERIES,
+    PITCH_ATTEMPTS_PER_SEC_FLOOR,
+    PITCH_DETECTION_INTERVAL_FRAMES,
+    PITCH_HOMOGRAPHY_MIN_KPS,
+    PITCH_MAX_ATTEMPTS_PER_SEC,
+    PITCH_MAX_INPUT_SIZE,
+    PITCH_MAX_LOST_FRAMES,
+    PITCH_MIN_AREA_FRACTION,
+    PITCH_MIN_CONFIDENCE,
+    PITCH_MIN_KEYPOINTS,
+    PITCH_MODEL_ID_DEFAULT,
+    PITCH_REQUEST_TIMEOUT_SECONDS,
+    PITCH_SAMPLING_MODE_DEFAULT,
+    PITCH_SAMPLING_MODES,
+    PITCH_SMOOTHING_ALPHA,
     POST_ROLL_SECONDS,
     PRE_ROLL_SECONDS,
     RING_BUFFER_CAPACITY_FRAMES,
     RING_BUFFER_JPEG_QUALITY,
     RING_BUFFER_MAX_BYTES,
+    ROBOFLOW_API_URL_DEFAULT,
     SEG_AMBIGUOUS_CONFIDENCE,
     SEG_CLIP_MARGIN_SECONDS,
     SEG_HARD_SPLIT_SECONDS,
@@ -73,6 +88,55 @@ from .constants import (
 # backend/app/core/config.py -> backend/app/core -> backend/app -> backend
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 PROJECT_DIR = BACKEND_DIR.parent
+
+
+def _load_dotenv() -> None:
+    """
+    Read `<project>/.env` if it exists, never overriding the real environment.
+
+    The API key for the optional pitch detector is a credential, so it lives in
+    an untracked `.env` (see .gitignore / .env.example) rather than in code or
+    in a command line. `override=False` means a shell-exported variable always
+    wins, which is what lets CI and the tests set these values directly.
+
+    Import failures are swallowed: python-dotenv is a convenience, and a
+    missing package must not stop the server from starting.
+    """
+    env_file = PROJECT_DIR / ".env"
+    if not env_file.is_file():
+        return
+    try:
+        from dotenv import load_dotenv
+    except Exception:
+        return
+    try:
+        load_dotenv(env_file, override=False)
+    except Exception:
+        return
+
+
+_load_dotenv()
+
+
+def _env_str(name: str, default: str) -> str:
+    raw = os.environ.get(name)
+    return raw.strip() if raw is not None and raw.strip() else default
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    try:
+        return int(raw) if raw not in (None, "") else default
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name)
+    try:
+        return float(raw) if raw not in (None, "") else default
+    except (TypeError, ValueError):
+        return default
 
 
 def _env_path(name: str, default: Path) -> Path:
@@ -142,6 +206,132 @@ def resolve_shot_model_path(models_dir: Path | None = None) -> Path:
         + "\n  ".join(str(p) for p in tried)
         + f"\nExpected the Adarsh {SHOT_MODEL_PROVENANCE_NAME} weights."
     )
+
+
+@dataclass(frozen=True)
+class PitchConfig:
+    """
+    Settings for the optional Roboflow pitch-keypoint detector.
+
+    Environment-resolved ONCE at import (via `_load_dotenv` above), exactly like
+    the rest of this module. Frozen, so a test can `dataclasses.replace` one
+    field without inventing a new configuration object.
+
+    `enabled` is deliberately just "is there an API key". Everything else —
+    model id, interval, thresholds — is inert until a credential exists, so a
+    checkout with no `.env` behaves as if the feature were never installed.
+    """
+
+    api_key: str = ""
+    api_url: str = ROBOFLOW_API_URL_DEFAULT
+    model_id: str = PITCH_MODEL_ID_DEFAULT
+    # Submit one frame every N frames of the source video.
+    interval_frames: int = PITCH_DETECTION_INTERVAL_FRAMES
+    # How those submissions are spaced: `interval` (every Nth frame, always),
+    # `adaptive` (the same N, scaled by delivery activity, calibration
+    # coverage, corridor brightness and queue back-pressure) or `sequential`
+    # (backpressure-aware: one inference at a time, never faster than the
+    # detector answers, capped by `max_attempts_per_sec`).
+    sampling_mode: str = PITCH_SAMPLING_MODE_DEFAULT
+    # `sequential` mode only: the ceiling on detector attempts per second, and
+    # therefore the cooldown between two submissions.
+    max_attempts_per_sec: float = PITCH_MAX_ATTEMPTS_PER_SEC
+    # Server-side and local confidence floor for a keypoint.
+    min_confidence: float = PITCH_MIN_CONFIDENCE
+    # Keypoints required to accept a detection at all.
+    min_keypoints: int = PITCH_MIN_KEYPOINTS
+    # Keypoints required before a homography can be computed (4 image points).
+    homography_min_keypoints: int = PITCH_HOMOGRAPHY_MIN_KPS
+    # Smallest share of the frame the keypoint hull may cover.
+    min_area_fraction: float = PITCH_MIN_AREA_FRACTION
+    # Frames after the last good detection that a calibration stays usable.
+    max_lost_frames: int = PITCH_MAX_LOST_FRAMES
+    # EMA weight applied to each accepted keypoint set.
+    smoothing_alpha: float = PITCH_SMOOTHING_ALPHA
+    # Ceiling on one Roboflow round trip.
+    request_timeout_seconds: float = PITCH_REQUEST_TIMEOUT_SECONDS
+    # Client-side downsize ceiling, in pixels, before upload.
+    max_input_size: int = PITCH_MAX_INPUT_SIZE
+
+    def __post_init__(self) -> None:
+        # An unrecognised mode must not take the analysis down: it resolves to
+        # the behaviour the field documents, and `metadata()` reports which one
+        # actually ran. Spelling and case are forgiven for the same reason —
+        # this value arrives from an environment file.
+        resolved = str(self.sampling_mode).strip().lower()
+        if resolved not in PITCH_SAMPLING_MODES:
+            resolved = PITCH_SAMPLING_MODE_DEFAULT
+        if resolved != self.sampling_mode:
+            object.__setattr__(self, "sampling_mode", resolved)
+        # The sequential cooldown divides by this: a zero (or negative) rate
+        # would spin the sampler, and a rate that makes no sense is corrected
+        # here rather than at the one place that uses it.
+        rate = float(self.max_attempts_per_sec)
+        if not rate > 0 or rate < PITCH_ATTEMPTS_PER_SEC_FLOOR:
+            rate = PITCH_ATTEMPTS_PER_SEC_FLOOR
+        if rate != self.max_attempts_per_sec:
+            object.__setattr__(self, "max_attempts_per_sec", rate)
+
+    @property
+    def enabled(self) -> bool:
+        """True only when a credential and a model id are both present."""
+        return bool(self.api_key) and bool(self.model_id)
+
+    def metadata(self) -> dict:
+        """
+        Reproducibility record for the analysis. The KEY IS NEVER INCLUDED —
+        this dict is persisted to disk and returned by the API.
+        """
+        return {
+            "enabled": self.enabled,
+            "model_id": self.model_id,
+            "api_url": self.api_url,
+            "interval_frames": max(1, self.interval_frames),
+            "sampling_mode": self.sampling_mode,
+            "max_attempts_per_sec": self.max_attempts_per_sec,
+            "min_confidence": self.min_confidence,
+            "min_keypoints": self.min_keypoints,
+            "homography_min_keypoints": self.homography_min_keypoints,
+            "min_area_fraction": self.min_area_fraction,
+            "max_lost_frames": self.max_lost_frames,
+            "smoothing_alpha": self.smoothing_alpha,
+            "request_timeout_seconds": self.request_timeout_seconds,
+            "max_input_size": self.max_input_size,
+            "api_key_configured": bool(self.api_key),
+        }
+
+
+PITCH_CONFIG = PitchConfig(
+    api_key=_env_str("ROBOFLOW_API_KEY", ""),
+    api_url=_env_str("ROBOFLOW_API_URL", ROBOFLOW_API_URL_DEFAULT).rstrip("/"),
+    model_id=_env_str("ROBOFLOW_MODEL_ID", PITCH_MODEL_ID_DEFAULT),
+    interval_frames=max(1, _env_int(
+        "PITCH_DETECTION_INTERVAL", PITCH_DETECTION_INTERVAL_FRAMES
+    )),
+    sampling_mode=_env_str(
+        "PITCH_SAMPLING_MODE", PITCH_SAMPLING_MODE_DEFAULT
+    ).strip().lower(),
+    max_attempts_per_sec=max(
+        PITCH_ATTEMPTS_PER_SEC_FLOOR,
+        _env_float("PITCH_MAX_ATTEMPTS_PER_SEC", PITCH_MAX_ATTEMPTS_PER_SEC),
+    ),
+    min_confidence=_env_float("PITCH_MIN_CONFIDENCE", PITCH_MIN_CONFIDENCE),
+    min_keypoints=max(1, _env_int("PITCH_MIN_KEYPOINTS", PITCH_MIN_KEYPOINTS)),
+    homography_min_keypoints=max(
+        4, _env_int("PITCH_HOMOGRAPHY_MIN_KEYPOINTS", PITCH_HOMOGRAPHY_MIN_KPS)
+    ),
+    min_area_fraction=_env_float(
+        "PITCH_MIN_AREA_FRACTION", PITCH_MIN_AREA_FRACTION
+    ),
+    max_lost_frames=max(1, _env_int("PITCH_MAX_LOST_FRAMES", PITCH_MAX_LOST_FRAMES)),
+    smoothing_alpha=min(1.0, max(0.0, _env_float(
+        "PITCH_SMOOTHING_ALPHA", PITCH_SMOOTHING_ALPHA
+    ))),
+    request_timeout_seconds=max(
+        0.5, _env_float("PITCH_REQUEST_TIMEOUT_SECONDS", PITCH_REQUEST_TIMEOUT_SECONDS)
+    ),
+    max_input_size=max(64, _env_int("PITCH_MAX_INPUT_SIZE", PITCH_MAX_INPUT_SIZE)),
+)
 
 
 @dataclass
@@ -532,11 +722,6 @@ class Paths:
     def source_video(self) -> Path:
         return self.root / "source.mp4"
 
-    @property
-    def public_prefix(self) -> str:
-        """URL prefix under which this analysis is served."""
-        return f"/data/runs/{self.analysis_id}"
-
     def clip_path(self, delivery_id: int) -> Path:
         return self.clips_dir / f"delivery_{delivery_id:03d}.mp4"
 
@@ -576,8 +761,10 @@ __all__ = [
     "DATA_DIR",
     "MANIFESTS_DIR",
     "MODELS_DIR",
+    "PITCH_CONFIG",
     "PipelineConfig",
     "Paths",
+    "PitchConfig",
     "PROJECT_DIR",
     "ResolvedSegmentation",
     "RUNS_DIR",

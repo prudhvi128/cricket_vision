@@ -65,3 +65,6 @@ yarn-error.log*
 *.pth
 *.pt
 *.onnx
+.env
+.env.*
+!.env.example

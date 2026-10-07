@@ -7,18 +7,25 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import BallAnalysisCard, { BallData } from "./BallAnalysisCard";
+import type { FlatDelivery } from "@/lib/api";
 
 const PAGE_SIZE = 20;
 
-// ALL possible length values — must stay in sync with trajectory.py LENGTH_ZONES
-const ALL_LENGTHS = ["Beamer", "Bouncer", "Short", "Good Length", "Full", "Yorker"];
+// The published length zones, in order, as core/constants.py LENGTH_ZONES_M
+// defines them. Beamer/Bouncer are kept only so results cached before length
+// was measured in metres can still be filtered by the label they carry.
+const ALL_LENGTHS = [
+  "Yorker", "Full", "Good Length", "Short", "Very Short",
+  "Beamer", "Bouncer",
+];
 
 // ALL possible line values — must stay in sync with trajectory.py LINE_ZONES
 const ALL_LINES = ["Wide Leg", "Leg Side", "Middle", "Off Side", "Wide Off"];
 
 interface Props {
   fetcher?: () => Promise<BallData[]>;
-  deliveries?: any[];
+  /** The current analysis's deliveries, already projected by `adaptDeliveries`. */
+  deliveries?: FlatDelivery[];
 }
 
 const BallAnalysisSection = ({ fetcher, deliveries: deliveriesProp }: Props) => {
@@ -43,6 +50,8 @@ const BallAnalysisSection = ({ fetcher, deliveries: deliveriesProp }: Props) => 
             line:          d.line,
             length:        d.length,
             swing:         d.swing,
+            shot:          d.shot,
+            shot_confidence: d.shot_confidence,
             release_angle: d.release_angle,
             bounce_angle:  d.bounce_angle,
           }));
@@ -72,9 +81,10 @@ const BallAnalysisSection = ({ fetcher, deliveries: deliveriesProp }: Props) => 
 
   const lenOpts = useMemo(() => {
     const fromData = [...new Set(balls?.map((b) => b.length).filter(Boolean) as string[])];
-    // Keep canonical order
-    const merged   = ALL_LENGTHS.filter((l) => fromData.includes(l) || true);
-    return merged;
+    // Canonical zone order first, then anything this result carries that the
+    // list does not - a filter that drops a value present in the data would
+    // make those deliveries unfilterable rather than merely mis-ordered.
+    return [...new Set([...ALL_LENGTHS, ...fromData])];
   }, [balls]);
 
   const filtered = useMemo(() => {
@@ -86,7 +96,10 @@ const BallAnalysisSection = ({ fetcher, deliveries: deliveriesProp }: Props) => 
       }
       if (lineFilter !== "all" && b.line !== lineFilter) return false;
       if (lenFilter  !== "all" && b.length !== lenFilter) return false;
-      if (speedRange !== "all" && typeof b.speed === "number") {
+      if (speedRange !== "all") {
+        // A delivery with no measured speed cannot be in any speed range —
+        // leaving it in would show a "140–150 km/h" ball with no speed at all.
+        if (typeof b.speed !== "number") return false;
         const [mn, mx] = speedRange.split("-").map(Number);
         if (b.speed < mn || b.speed > mx) return false;
       }
@@ -134,7 +147,7 @@ const BallAnalysisSection = ({ fetcher, deliveries: deliveriesProp }: Props) => 
             </SelectContent>
           </Select>
 
-          {/* Length filter — all 6 zones always shown */}
+          {/* Length filter — every published zone, plus anything the data has */}
           <Select value={lenFilter} onValueChange={(v) => { setLenFilter(v); setVisible(PAGE_SIZE); }}>
             <SelectTrigger className="w-[150px]"><SelectValue placeholder="Length" /></SelectTrigger>
             <SelectContent>

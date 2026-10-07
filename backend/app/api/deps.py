@@ -4,8 +4,8 @@ deps.py — Shared dependencies and the per-analysis job registry.
 WHY A REGISTRY RATHER THAN A GLOBAL
 -----------------------------------
 CricketTracker's `main.py` keeps `processing_status` as a module-level global,
-so two concurrent uploads overwrite each other's progress and one can cancel the
-other. State here is keyed by `analysis_id`, so uploads are isolated.
+so two concurrent uploads overwrite each other's progress. State here is keyed by
+`analysis_id`, so uploads are isolated.
 
 Jobs run on a background thread because a full-match analysis is minutes of
 GPU-bound work; doing it inline would block every other request.
@@ -32,7 +32,6 @@ from ..core.constants import STAGE_PROGRESS_BANDS
 from ..pipeline.analysis_pipeline import UnifiedPipeline
 from ..tracking.tracking_service import ProgressFn
 from ..tracking.detector import BallDetector
-from ..storage.persistence import read_json
 
 log = logging.getLogger(__name__)
 
@@ -42,41 +41,18 @@ def utc_now_iso() -> str:
 
 
 @dataclass
-class ProgressEvent:
-    at: str
-    phase: str
-    frames_done: int
-    frames_total: int
-    detail: str
-    percent: Optional[float] = None
-
-    def as_dict(self) -> dict:
-        return {
-            "at": self.at,
-            "phase": self.phase,
-            "frames_done": self.frames_done,
-            "frames_total": self.frames_total,
-            "percent": self.percent,
-            "detail": self.detail,
-        }
-
-
-@dataclass
 class Job:
     analysis_id: str
-    status: str = "queued"          # queued|running|completed|failed|cancelled
+    status: str = "queued"          # queued|running|completed|failed
     source_name: str = ""
     created_at: str = field(default_factory=utc_now_iso)
     started_at: Optional[str] = None
     finished_at: Optional[str] = None
-    phase: str = "queued"
     frames_done: int = 0
     frames_total: int = 0
     percent: Optional[float] = None
     detail: str = ""
-    events: list[ProgressEvent] = field(default_factory=list)
     error: Optional[str] = None
-    cancel_requested: bool = False
     # ── Progress accounting ──────────────────────────────────────────────────
     # `percent` is a MONOTONIC function of the current stage's own measured unit
     # count mapped through STAGE_PROGRESS_BANDS. Two properties matter and both
@@ -90,19 +66,20 @@ class Job:
     #
     # `_high_water` is the mechanism for the first property.
     _high_water: float = 0.0
-    # Which sequential stage the pipeline is in. Distinct from `phase`, which is
-    # whatever the stage last reported (see PIPELINE_STAGES).
+    # Which sequential stage the pipeline is in. Internal phase names from the
+    # pipeline are collapsed onto this vocabulary in `_PHASE_TO_STAGE`.
     stage: str = "queued"
     # Free-form activity label for work interleaved inside the tracking pass
     # (segmentation, per-delivery analytics, clip writing). Never used to compute
     # percent.
     substage: Optional[str] = None
-    # Real unit counts per stage, so a client can show "1,204 / 13,565 frames"
-    # instead of only a rounded percentage.
-    units: dict = field(default_factory=dict)
 
-    def as_dict(self, include_events: bool = False) -> dict:
-        d = {
+    def as_dict(self) -> dict:
+        """
+        The public status document. Nothing internal leaves through it: no phase
+        vocabulary, no unit counters, no event history.
+        """
+        return {
             "analysis_id": self.analysis_id,
             "status": self.status,
             "source_name": self.source_name,
@@ -111,21 +88,12 @@ class Job:
             "finished_at": self.finished_at,
             "stage": self.stage,
             "substage": self.substage,
-            "phase": self.phase,
             "progress": self.percent,
-            "units": dict(self.units),
             "frames_done": self.frames_done,
             "frames_total": self.frames_total,
-            # Kept for backwards compatibility with the existing frontend, which
-            # reads `percent`. Identical value to `progress`.
-            "percent": self.percent,
             "detail": self.detail,
             "error": self.error,
-            "cancel_requested": self.cancel_requested,
         }
-        if include_events:
-            d["events"] = [e.as_dict() for e in self.events]
-        return d
 
 
 # Which of the pipeline's emitted phases map onto which public stage.
@@ -163,7 +131,8 @@ def weighted_progress(stage: str, done: int, total: int) -> Optional[float]:
     Map a stage's real unit count onto 0..100 using its progress band.
 
     Returns None when `total` is unknown, because a percentage of an unknown
-    denominator is a guess. The caller reports `units` instead in that case.
+    denominator is a guess. The caller leaves `progress` untouched for that tick
+    rather than inventing a number.
     """
     band = STAGE_PROGRESS_BANDS.get(stage)
     if band is None:
@@ -263,18 +232,7 @@ class JobRegistry:
                     # Interleaved activity inside the tracking pass. The top-level
                     # stage does not move, because no phase boundary was crossed.
                     job.substage = substage
-                    job.phase = substage
                     job.detail = detail
-                    job.events.append(
-                        ProgressEvent(
-                            at=utc_now_iso(),
-                            phase=substage,
-                            frames_done=job.frames_done,
-                            frames_total=job.frames_total,
-                            detail=detail,
-                            percent=job.percent,
-                        )
-                    )
                     return
 
                 stage = _PHASE_TO_STAGE.get(phase)
@@ -282,17 +240,9 @@ class JobRegistry:
                     job.stage = stage
                     job.substage = None
 
-                job.phase = stage or job.stage
                 job.frames_done = done
                 job.frames_total = total
                 job.detail = detail
-
-                if job.stage in ("uploading", "tracking", "shot_classification",
-                                 "overlay", "validation", "persisting"):
-                    job.units[job.stage] = {
-                        "done": int(done),
-                        "total": int(total),
-                    }
 
                 candidate = weighted_progress(job.stage, done, total)
                 if candidate is not None:
@@ -305,21 +255,6 @@ class JobRegistry:
                     job._high_water = candidate
                     job.percent = candidate
 
-                job.events.append(
-                    ProgressEvent(
-                        at=utc_now_iso(),
-                        phase=job.phase,
-                        frames_done=done,
-                        frames_total=total,
-                        detail=detail,
-                        percent=job.percent,
-                    )
-                )
-                # Bound memory on long videos: progress polling does not need
-                # every 0.5s tick retained forever.
-                if len(job.events) > 500:
-                    del job.events[: len(job.events) - 500]
-
         return _cb
 
     # ── Execution ────────────────────────────────────────────────────────────
@@ -330,7 +265,6 @@ class JobRegistry:
             job.status = "running"
             job.started_at = utc_now_iso()
             job.stage = "tracking"
-            job.units["tracking"] = {"done": 0, "total": 0}
             t0 = time.perf_counter()
             try:
                 pipeline = models.pipeline()
@@ -352,27 +286,15 @@ class JobRegistry:
                         + f" in {time.perf_counter() - t0:.1f}s"
                     )
                     job.error = None
-                    if job.cancel_requested:
-                        job.status = "cancelled"
-                        job.stage = "tracking"
-                    else:
-                        # Only a genuinely finished pipeline claims 100%. A
-                        # cancelled run reports how far it actually got.
-                        job.status = "completed"
-                        job.stage = "completed"
-                        job.phase = "completed"
-                        job.substage = None
-                        job.units["deliveries"] = {
-                            "done": len(result.deliveries),
-                            "total": len(result.deliveries),
-                        }
-                        job._high_water = 100.0
-                        job.percent = 100.0
+                    job.status = "completed"
+                    job.stage = "completed"
+                    job.substage = None
+                    job._high_water = 100.0
+                    job.percent = 100.0
             except Exception as exc:
                 log.exception("Analysis %s failed", job.analysis_id)
                 job.status = "failed"
                 job.stage = "failed"
-                job.phase = "failed"
                 job.error = str(exc)
                 job.detail = f"failed: {exc}"
             finally:
@@ -383,25 +305,6 @@ class JobRegistry:
             self._threads[job.analysis_id] = thread
         thread.start()
         return thread
-
-    def cancel(self, analysis_id: str) -> bool:
-        """
-        Request cancellation.
-
-        The tracking pass checks this flag between deliveries. A cancel
-        mid-delivery takes effect once that delivery's clip has been written, so
-        a clip is never left half-written with its frame map claiming otherwise.
-        """
-        job = self.get(analysis_id)
-        if job is None or job.status in ("completed", "failed", "cancelled"):
-            return False
-        job.cancel_requested = True
-        return True
-
-    def load_result(self, analysis_id: str) -> Optional[dict]:
-        """Read a persisted result from disk. Works for jobs not in memory."""
-        return read_json(Paths(analysis_id=analysis_id).result_json)
-
 
 # Module-level singletons, created lazily so importing this module is cheap and
 # does not touch the filesystem.

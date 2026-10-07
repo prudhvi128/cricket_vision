@@ -405,8 +405,9 @@ class Shot:
 
 @dataclass
 class OverlayInfo:
+    # `path` is where the rendered file lives on disk. There is no public URL for
+    # an overlay: the API serves clips only, and the client draws its own overlay.
     path: Optional[str] = None
-    url: Optional[str] = None
     rendered: bool = False
     trajectory_source: Optional[str] = None
     error: Optional[str] = None
@@ -441,6 +442,18 @@ class Delivery:
     tracking_source: TrackingSource = "single_pass"
     fallback_reason: Optional[str] = None
     quality: Quality = field(default_factory=Quality)
+
+    # ── Optional pitch keypoint calibration ───────────────────────────────────
+    # Where the pitch was in the frame when this delivery was recorded, as found
+    # by the optional Roboflow keypoint model (app/pitch). Holds keypoints,
+    # corners, a confidence and — when four corners survived validation — the
+    # image→unit-square homography the API uses for `pitch_position`.
+    #
+    # None means "no pitch detection ran or none was valid", which is the normal
+    # state for a checkout with no ROBOFLOW_API_KEY. It is NEVER used by speed,
+    # length, line or swing: those come from `analytics/calibration.py` and the
+    # operator's measured corners, and remain suppressed exactly as before.
+    pitch: Optional[dict] = None
 
     # ── Event segmentation provenance ────────────────────────────────────────
     # `event` is the full evidence the segmenter used to draw this delivery's
@@ -532,11 +545,11 @@ class Delivery:
             "bowling": self.bowling.as_dict(),
             "shot": self.shot.as_dict() if self.shot else None,
             "overlay": self.overlay.as_dict(),
-            "overlay_url": self.overlay.url,
             "tracking_source": self.tracking_source,
             "fallback_reason": self.fallback_reason,
             "provenance": self.provenance(),
             "quality": self.quality_report(),
+            "pitch": self.pitch,
             "event": self.event,
             "validation": self.validation,
         }

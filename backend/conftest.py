@@ -37,3 +37,17 @@ for _p in (BACKEND_DIR, PROJECT_DIR):
 _RUNS_DIR = Path(tempfile.mkdtemp(prefix="cricket_test_runs_"))
 os.environ["CRICKET_RUNS_DIR"] = str(_RUNS_DIR)
 os.environ.setdefault("CRICKET_UPLOADS_DIR", str(_RUNS_DIR / "uploads"))
+
+# Keep the optional Roboflow pitch detector OFF under test.
+#
+# `.env` at the project root configures it for real runs, and
+# `app.core.config._load_dotenv()` loads that file with `override=False` on
+# purpose: the real environment always wins, which is what lets CI and the tests
+# set values directly. So an EMPTY value — not an absent one — is what holds
+# `PITCH_CONFIG.enabled` False once a developer has a credential configured.
+#
+# Without this the suite would submit synthetic test frames to a live endpoint,
+# and both its timing and its results would depend on a credential that is never
+# printed. Tests that want the feature inject their own detector with their own
+# config (see tests/integration/test_pitch_pipeline.py).
+os.environ["ROBOFLOW_API_KEY"] = ""

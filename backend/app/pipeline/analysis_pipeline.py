@@ -97,8 +97,18 @@ class PipelineResult:
             "schema_version": SCHEMA_VERSION,
             "pipeline_version": PIPELINE_VERSION,
             "analysis_id": self.analysis_id,
-            "media_base_url": f"/api/analysis/{self.analysis_id}/deliveries",
-            "calibration": calibration_metadata(cfg.pitch_corners_px),
+            # Prefix the clip URLs of this analysis are served under.
+            "media_base_url": f"/api/analysis/{self.analysis_id}/clips",
+            "calibration": calibration_metadata(
+                cfg.pitch_corners_px,
+                pitch_geometry=(
+                    self.tracking.pitch_geometry_stats if self.tracking else None
+                ),
+            ),
+            # The optional pitch keypoint detector's own record: whether it was
+            # configured, how many submissions/detections/failures it made. Null
+            # when the pass never ran. Configuration only — never a credential.
+            "pitch_detection": self.tracking.pitch_summary if self.tracking else None,
             "summary": {
                 "deliveries": len(deliveries),
                 "quarantined": len(self.quarantined),

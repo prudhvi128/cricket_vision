@@ -23,7 +23,7 @@ uploaded cricket stadium video
   → trajectory / ball analytics       trajectory, bounce, swing, angles
   → overlay rendering                 annotated clip per delivery
   → persistence                       result.json + tracking.json + clips + overlays
-  → FastAPI API                       24 routes under /api
+  → FastAPI API                       6 routes under /api
 ```
 
 **The single-pass rule.** The source video is decoded exactly once. YOLO11 runs exactly once and the
@@ -41,6 +41,9 @@ E2E check asserts each equals 1.
 | `app/tracking/kalman_tracker.py` | Ball track state + Kalman filter |
 | `app/analytics/trajectory.py` | Ball trajectory construction |
 | `app/analytics/calibration.py` | Homography, `pixel_to_ground`, Savitzky-Golay smoothing, `get_fps` |
+| `app/pitch/detector.py` | Roboflow keypoint `RoboflowPitchDetector` + response parser (optional) |
+| `app/pitch/calibration.py` | `derive_corners`, homography to the pitch unit square, `PitchSmoother` |
+| `app/pitch/service.py` | `PitchService` — interval-gated, non-blocking, per-frame `delivery.pitch` |
 | `app/video/renderer.py` | Overlay drawing primitives |
 | `app/segmentation/candidate_generation.py` | Delivery/event candidate generation and boundaries |
 | `app/segmentation/barriers.py` | `ActivityWindowTracker` — horizon and barrier logic |
@@ -53,12 +56,11 @@ E2E check asserts each equals 1.
 | `app/shot_classification/model.py` | `ImprovedSOTAModel` — the Adarsh shot architecture |
 | `app/shot_classification/inference.py` | Adarsh exact preprocessing + 10-class inference |
 | `app/pipeline/analysis_pipeline.py` | `UnifiedPipeline` — stage orchestration, quarantine, persistence |
-| `app/api/endpoints.py` | All HTTP routes |
+| `app/api/routes/` | All HTTP routes (`analysis`, `media`, `system`) |
 | `app/api/deps.py` | Job registry, `ModelCache`, weighted monotonic progress |
 | `app/core/config.py` | Paths, tunables, calibration, checkpoint resolution |
 | `app/core/constants.py` | Stage vocabulary, progress bands, segmentation + shot constants |
 | `app/schemas/tracking.py` | Pydantic result schemas |
-| `app/reference.py` | Shot classes, segmentation vocabulary, calibration rules for `/api/reference` |
 | `app/utils/io.py` | Atomic JSON read/write |
 
 ## Stage vocabulary
@@ -80,16 +82,67 @@ prevents the value dropping when a stage hands over. Sub-stages are emitted from
   declares it via `frames_sampled`, `unique_frames_sampled`, `frames_repeated`.
 - The 72 MB checkpoint is loaded **once per process** and reused across analyses by `ModelCache`.
 - Every delivery records which checkpoint produced it.
+- The result carries `shot.classification` + `shot.confidence` per delivery, and the ball cards
+  display both — the confidence is shown, not hidden, so a 23% call reads as a 23% call.
 
 ## Analytics honesty rule
 
 Trajectory is authoritative and every point is explicitly `detected` or `predicted`.
 
 Ground-plane analytics — `speed_kmh`, `length`, `line`, `swing`, `bounce_angle`, and ground-plane
-coordinates — are computed **only when the video is calibrated**. Without per-video pitch corners they
-are `null`, never estimated from a template. The calibration block in the result states which fields
-are suppressed and why. `speed_is_calibrated` is `false` by default; `geometry_calibrated` and
-`ground_plane_analytics_available` describe whether the geometry is usable at all.
+coordinates — are computed **only when the geometry was measured on this video**: pitch corners
+measured by an operator, or the pitch keypoint model's quad converted to metres (next section).
+Without either they are `null`, never estimated from a template. The calibration block in the result
+states which fields are suppressed and why. `speed_is_calibrated` is `false` by default;
+`geometry_calibrated` and `ground_plane_analytics_available` describe whether the geometry is usable
+at all, and `geometry_source` says which measurement it came from.
+
+## Pitch keypoint detection (optional)
+
+`app/pitch/` asks Roboflow for pitch keypoints on one frame every
+`PITCH_DETECTION_INTERVAL` frames. Its only job is to say **where the pitch is
+in the frame**. It is inert until `ROBOFLOW_API_KEY` is present (see
+`.env.example` at the project root); a checkout with no `.env` behaves as if the
+feature were never installed.
+
+- The hook is `on_frame(frame_number, frame)` inside the tracking loop: it never
+  blocks and never raises. The queue has room for two, drops the oldest, and the
+  detector runs on its own daemon thread, so a slow or dead API cannot slow the
+  pass or fail the analysis.
+- Four accepted keypoints give a quad and a homography. Three give a calibration
+  with no quad: `corners: {}`, `homography_available: false`, every
+  `pitch_position: null`. A fourth corner is never invented.
+- Per-frame states: `calibrated`, `temporary_loss` (last good quad, drawn as
+  stale), `no_calibration`, `calibration_expired`.
+- A delivery's block is scoped to its own window (`snapshot_for_delivery`): a
+  quad measured anywhere inside the delivery describes that footage, so a quad
+  that has gone stale by the delivery's LAST frame is reported as
+  `temporary_loss` — labelled as previous, still usable — rather than discarded
+  as expired. An expired quad is never used.
+- Output: `delivery.pitch` on every served delivery, and `pitch_detection` in
+  the persisted `result.json` — counters, effective config, last refusal/error.
+  The API key is never recorded anywhere (`scrub()`).
+- **It can feed analytics — but only when the quad can be oriented.**
+  `app/analytics/pitch_geometry.py` scales the quad's long axis to
+  `PITCH_LENGTH_M` (20.12 m) and its short axis to `CREASE_WIDTH_M` (2.64 m),
+  then uses the direction the ball travelled (release → bounce, cut at the
+  deepest image point so the post-bounce rise cannot vote) to decide which end
+  of the quad the batter stood at. The result is a pixel→metres homography in
+  the SAME convention the operator's corners use, so `speed_kmh`, `length`,
+  `line`, `swing`, `bounce_angle` and the ground-plane coordinates are computed
+  from it — with `length` now metres from the batting crease
+  (`LENGTH_ZONES_M`). The assumption that the quad *is* that rectangle is
+  quoted in `geometry_note`, not hidden.
+- **Failure stays a reason, never a number.** A roughly square quad, travel too
+  short or too even to name a direction, fewer than three usable detections —
+  each is refused by name and counted in `pitch_keypoint_geometry.rejections`,
+  and the affected delivery keeps `null` for every metre it cannot honestly
+  report.
+- **The map needs the orientation.** `pitch_position` alone is a fraction of
+  the quad, not a compass bearing, so `pitch.orientation` (`axis`,
+  `batting_end`, `travel_delta`, `calibration_frame`) is served beside it and
+  the pitch map plots nothing without it — a frame-coordinate fallback would
+  put bounces at the wrong end of the strip.
 
 ## Purity and quarantine
 
@@ -101,39 +154,36 @@ The purity gate runs before the shot and overlay stages, so an impure clip is ne
 | `AMBIGUOUS` | Served, flagged |
 | `MULTIPLE_EVENTS`, `NO_EVENT`, missing verdict | Quarantined with full diagnostics; **not** served |
 
-Delivery IDs are never renumbered after quarantine, so a quarantined ID returns 404 while the record
-survives in the `quarantine` array.
+Delivery IDs are never renumbered after quarantine, so a quarantined ID simply
+never appears in `deliveries` while the record survives in the `quarantine`
+array of `result.json`.
 
 ## API
 
-24 routes under `/api`, each also reachable through plural legacy aliases that delegate to the same
-handler. Static analysis output is mounted at `/data`.
+Six routes under `/api` — one spelling per route, no aliases, no static mount.
+Full contract: `docs/API_CONTRACT.md`.
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/analyze` | Upload and start an analysis (202) |
-| POST | `/api/upload` | Legacy upload entry point |
-| GET | `/api/analysis/{id}/status` | Terminal status |
-| GET | `/api/analysis/{id}/progress` | SSE progress stream |
-| GET | `/api/analysis/{id}/progress/json` | Progress snapshot |
-| GET | `/api/analysis/{id}/deliveries` | Delivery list |
-| GET | `/api/analysis/{id}/deliveries/{ref}` | One delivery |
-| GET | `/api/analysis/{id}/deliveries/{ref}/clip` | Delivery clip (range requests supported) |
-| GET | `/api/analysis/{id}/deliveries/{ref}/overlay` | Delivery overlay |
-| GET | `/api/analysis/{id}/deliveries/{ref}/trajectory` | Delivery trajectory |
-| GET | `/api/analysis/{id}/result` | Frontend array of deliveries (clean schema) |
-| GET | `/api/analysis/{id}/result/internal` | Full persisted result document |
-| GET | `/api/analyses/{id}/tracking` | Per-frame tracking log |
-| POST | `/api/analysis/{id}/cancel` | Cancel a running analysis |
-| GET | `/api/analyses` | Known analyses |
+| POST | `/api/analyze` | Upload (`video=` field) and start an analysis (202) |
+| POST | `/api/upload` | Same handler, `file=` field (the other frontend's spelling) |
+| GET | `/api/analysis/{id}/status` | `queued` / `running` / `completed` / `failed` + `progress` |
+| GET | `/api/analysis/{id}/result` | The envelope: `{analysis_id, status, pitch, deliveries[]}` |
+| GET | `/api/analysis/{id}/clips/{name}` | Delivery clip (range requests supported) |
 | GET | `/api/health` | Health, versions, stage vocabulary |
-| GET | `/api/reference` | Shot classes, vocabulary, calibration rules |
 
-Plural aliases: `/api/analyses/{id}/status|result|progress|deliveries/{ref}|trajectory/{ref}|cancel` and
-`/api/analyses/{id}/clips/{name}`, `/api/analyses/{id}/overlays/{name}`.
+Removed and deliberately absent: the plural `/api/analyses/{id}/…` aliases,
+`/result/internal`, `/progress` + `/progress/json`, `/cancel`, every
+`/deliveries…` and `/trajectory/{id}` route, the overlay routes, `/tracking`,
+`/api/reference`, the `/api/analyses` listing, and the static `/data` mount.
+They return 404; the tests assert the absence. The complete `result.json`
+(summary, calibration, performance, quarantine) is written to disk and served by
+no route.
 
-Uploads are validated at the door: extension allow-list, size ceiling, non-empty body, and an OpenCV
-readability probe, so a mislabelled file is rejected before any model work starts.
+Uploads are validated at the door: extension allow-list, size ceiling, non-empty
+body, and an OpenCV readability probe, so a mislabelled file is rejected before
+any model work starts. A failed run reports `status: "failed"` with `error`
+set; an unknown id is `404`.
 
 ## Models
 
@@ -146,7 +196,7 @@ Both are referenced from `app/core/config.py` and resolved with no fallback to a
 
 ## Tests
 
-`backend/tests/` — 15 test modules plus `helpers.py`. `python -m pytest -q` from `backend/`.
+`backend/tests/` — 21 test modules plus `helpers.py`. `python -m pytest -q` from `backend/`.
 The suite is hermetic: it drives the real segmenter, merger, validator, writer and API with stub
 detectors and synthetic frames, and does not require either checkpoint or a video.
 
@@ -156,7 +206,7 @@ detectors and synthetic frames, and does not require either checkpoint or a vide
 cd backend
 python -m pytest -q                 # tests
 python -m uvicorn main:app --port 8000
-python tools\e2e_real_video.py      # real-video stadium smoke test (uses ..\..\real_cricket.mp4)
+python scripts\verification\e2e_real_video.py   # from the project root; real-video smoke test
 ```
 
 ## Data layout
@@ -176,9 +226,9 @@ happened per frame. None of it modifies pipeline behaviour or thresholds.
 
 | Script | Purpose |
 |---|---|
-| `backend/tools/e2e_real_video.py` | Live HTTP smoke test; `--verify-only <id>` re-checks a stored run |
-| `tools/real_video_diagnostic.py` | Per-frame stage-by-stage diagnostic |
-| `tools/diagnose_real_deliveries.py` | Locates where deliveries are lost |
-| `tools/run_real_video_test.py` | Service-level real-video verification |
-| `tools/diagnose_results.py` | Explains a fixture run's output |
-| `tools/build_test_fixture.py` | Rebuilds `full_fixture.mp4` from `source_clips/` |
+| `scripts/verification/e2e_real_video.py` | Live HTTP smoke test; `--verify-only <id>` re-checks a stored run |
+| `scripts/diagnostics/real_video_diagnostic.py` | Per-frame stage-by-stage diagnostic |
+| `scripts/diagnostics/diagnose_real_deliveries.py` | Locates where deliveries are lost |
+| `scripts/diagnostics/run_real_video_test.py` | Service-level real-video verification |
+| `scripts/diagnostics/diagnose_results.py` | Explains a fixture run's output |
+| `scripts/dataset/build_test_fixture.py` | Rebuilds `full_fixture.mp4` from `source_clips/` |

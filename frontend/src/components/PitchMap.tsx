@@ -3,23 +3,31 @@
  *
  * Design:
  *  - Realistic textured pitch with perspective angle (25-40°)
- *  - All 6 length zones colour-banded
- *  - All 5 line zones
- *  - Accurate stumps, crease lines, popping crease
- *  - Glowing bounce dots positioned from bounce_x / bounce_y
- *  - Hover tooltip with ball stats
- *  - Filter by length zone
- *  - Trajectory line connecting all bounce points in order
+ *  - Length zones drawn from METRES (backend LENGTH_ZONES_M), not from frame
+ *    fractions: a band is where that distance actually lands on a 20.12 m pitch
+ *  - The batting end is always at the bottom (y = 1), which is the orientation
+ *    the backend serves with each delivery
+ *  - Glowing bounce dots positioned from bounce_x / bounce_y, which `api.ts`
+ *    only produces when the record carries a pitch-model coordinate AND an
+ *    orientation - so a dot here is always somewhere on this pitch
+ *  - Honest empty state: no calibrated bounce positions means no dots and a
+ *    sentence saying why, never a position invented from frame pixels
+ *  - Hover tooltip with ball stats, filter by length zone, trajectory line
+ *  - Line zones (leg/off) stay the ported image-space rule the backend reports
  */
 
 import { useState, useMemo } from "react";
 
 interface Delivery {
   ball: number;
-  speed: number;
-  length: string;
-  line: string;
-  swing: string;
+  /** km/h as served, or absent — the tooltip shows "—", never a guess. */
+  speed?: number;
+  /** Absent when the run measured no length. */
+  length?: string;
+  /** Absent when the run measured no line. */
+  line?: string;
+  swing?: string;
+  shot?: string;
   release_angle?: number;
   bounce_angle?: number;
   bounce_x?: number;
@@ -27,24 +35,37 @@ interface Delivery {
 }
 interface Props { deliveries: Delivery[]; }
 
+// Metres from the batting crease — the same table the backend publishes
+// (core/constants.py LENGTH_ZONES_M). Thresholds are coaching-standard
+// distances, not values fitted to this footage.
+const PITCH_LENGTH_M = 20.12;
+const LENGTH_ZONES_M: { label: string; lo: number; hi: number }[] = [
+  { label: "Yorker",      lo: 0.0,  hi: 1.5 },
+  { label: "Full",        lo: 1.5,  hi: 4.0 },
+  { label: "Good Length", lo: 4.0,  hi: 7.0 },
+  { label: "Short",       lo: 7.0,  hi: 10.0 },
+  { label: "Very Short",  lo: 10.0, hi: PITCH_LENGTH_M },
+];
+
 const COLORS: Record<string, string> = {
-  Beamer:        "#a855f7",
-  Bouncer:       "#ec4899",
+  "Very Short":  "#8b5cf6",
   Short:         "#3b82f6",
   "Good Length": "#22c55e",
   Full:          "#f97316",
   Yorker:        "#f43f5e",
+  // Labels from results cached before length was measured in metres.
+  Beamer:        "#a855f7",
+  Bouncer:       "#ec4899",
   Unknown:       "#94a3b8",
 };
 
-const LENGTH_ZONES = [
-  { label: "Beamer",       y0: 0.00, y1: 0.30 },
-  { label: "Bouncer",      y0: 0.30, y1: 0.45 },
-  { label: "Short",        y0: 0.45, y1: 0.58 },
-  { label: "Good Length",  y0: 0.58, y1: 0.72 },
-  { label: "Full",         y0: 0.72, y1: 0.83 },
-  { label: "Yorker",       y0: 0.83, y1: 1.00 },
-];
+// Bands in map coordinates: y = 1 is the batting end, y = 0 the other one, so
+// a ball `lo..hi` metres short of the crease sits at y = 1 - distance/20.12.
+const LENGTH_ZONES = LENGTH_ZONES_M.map(({ label, lo, hi }) => ({
+  label,
+  y0: 1 - hi / PITCH_LENGTH_M,
+  y1: 1 - lo / PITCH_LENGTH_M,
+}));
 
 // SVG canvas
 const TW = 560, TH = 680;
@@ -72,6 +93,13 @@ const PitchMap = ({ deliveries }: Props) => {
     () => deliveries.filter((d) => d.bounce_x !== undefined && d.bounce_y !== undefined),
     [deliveries]
   );
+
+  // Every zone the backend can publish, plus any label this result happens to
+  // carry (an older cached result, say), so nothing is unfilterable.
+  const lengthOpts = useMemo(() => {
+    const present = deliveries.map((d) => d.length).filter(Boolean) as string[];
+    return [...new Set([...LENGTH_ZONES_M.map((z) => z.label), ...present])];
+  }, [deliveries]);
 
   const filtered = useMemo(
     () => filterLen === "All" ? withCoords : withCoords.filter((d) => d.length === filterLen),
@@ -115,7 +143,7 @@ const PitchMap = ({ deliveries }: Props) => {
 
         {/* Filter buttons */}
         <div className="flex flex-wrap gap-2">
-          {["All", ...Object.keys(COLORS).filter(k => k !== "Unknown")].map((len) => (
+          {["All", ...lengthOpts].map((len) => (
             <button key={len} onClick={() => setFilterLen(len)}
               className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
                 filterLen === len
@@ -131,9 +159,9 @@ const PitchMap = ({ deliveries }: Props) => {
 
       {/* Legend */}
       <div className="flex flex-wrap gap-3">
-        {Object.entries(COLORS).filter(([k]) => k !== "Unknown").map(([label, color]) => (
+        {lengthOpts.map((label) => (
           <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="inline-block h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+            <span className="inline-block h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[label] ?? COLORS.Unknown }} />
             {label}
           </div>
         ))}
@@ -294,7 +322,7 @@ const PitchMap = ({ deliveries }: Props) => {
           {/* ── Bounce dots ── */}
           {filtered.map((d, i) => {
             const [sx, sy] = mapToPitch(d.bounce_x!, d.bounce_y!);
-            const color    = COLORS[d.length] ?? COLORS.Unknown;
+            const color    = (d.length ? COLORS[d.length] : undefined) ?? COLORS.Unknown;
             const isHov    = hovered === i;
 
             return (
@@ -326,10 +354,10 @@ const PitchMap = ({ deliveries }: Props) => {
                     <rect x={sx + 12} y={sy - 52} width={130} height={56}
                       rx="6" fill="rgba(0,0,0,0.88)" stroke={color} strokeWidth="1" />
                     <text x={sx + 20} y={sy - 35} fontSize="11" fill={color} fontWeight="700">
-                      Ball {d.ball} — {d.length}
+                      Ball {d.ball} — {d.length || "—"}
                     </text>
                     <text x={sx + 20} y={sy - 20} fontSize="10" fill="#d1d5db">
-                      {d.speed > 0 ? `${d.speed} km/h` : "—"} · {d.line}
+                      {(d.speed ?? 0) > 0 ? `${d.speed} km/h` : "—"} · {d.line || "—"}
                     </text>
                     <text x={sx + 20} y={sy - 6} fontSize="10" fill="#9ca3af">
                       {d.swing || "—"}
@@ -340,18 +368,35 @@ const PitchMap = ({ deliveries }: Props) => {
             );
           })}
 
-          {/* ── No data message ── */}
+          {/* ── Honest states ── */}
           {withCoords.length === 0 && (
-            <text x={TW/2} y={TH/2} textAnchor="middle" fontSize="14"
-              fill="#9ca3af">
-              No bounce data available
+            <g>
+              <text x={TW / 2} y={TH / 2 - 16} textAnchor="middle" fontSize="15"
+                fontWeight="700" fill="#e2e8f0">
+                No pitch-calibrated bounce positions
+              </text>
+              <text x={TW / 2} y={TH / 2 + 6} textAnchor="middle" fontSize="11"
+                fill="#9ca3af">
+                The pitch model found no readable pitch in this footage, so there
+              </text>
+              <text x={TW / 2} y={TH / 2 + 22} textAnchor="middle" fontSize="11"
+                fill="#9ca3af">
+                is nowhere honest to place a bounce. Nothing is plotted.
+              </text>
+            </g>
+          )}
+          {withCoords.length > 0 && filtered.length === 0 && (
+            <text x={TW / 2} y={TH / 2} textAnchor="middle" fontSize="13" fill="#9ca3af">
+              {`No “${filterLen}” deliveries with a calibrated bounce`}
             </text>
           )}
         </svg>
 
         {withCoords.length > 0 && (
           <p className="text-xs text-muted-foreground mt-3 text-center italic w-full">
-            Bounce points plotted from model output · hover for ball details
+            {withCoords.length === deliveries.length
+              ? "Bounce points from pitch-model coordinates · hover for ball details"
+              : `${withCoords.length} of ${deliveries.length} deliveries have a pitch-calibrated bounce · hover for ball details`}
           </p>
         )}
       </div>

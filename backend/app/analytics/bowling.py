@@ -22,7 +22,7 @@ D1  Missing speed is reported as null. It is never filled from a median, from a
 D2  The upstream formula `kmph = speed_mps * 3.6 * 2.0 - 20.0` is a hand-tuned
     heuristic, not a physical measurement. It is preserved for continuity but is
     labelled an estimate everywhere it surfaces, and the scale/offset are
-    persisted in the analysis calibration block and served by /api/reference.
+    persisted in the analysis calibration block, where the delivered calibration and provenance live.
 
 SIGNATURES ARE THE UPSTREAM ONES
 --------------------------------
@@ -31,10 +31,19 @@ The ported helpers use upstream's exact conventions, which are easy to get wrong
   * `detect_bounce(traj_list, H)` — traj_list is bare (x, y) tuples; the return
     value is an INDEX into that list, not a frame number and not a coordinate.
   * `detect_release_frame(positions)` — also returns an INDEX.
-  * `classify_length(bounce_y_px, frame_height)` / `classify_line(bounce_x_px,
-    frame_width)` — take PIXEL coordinates plus the frame dimension, and do the
-    normalisation internally. Passing ground-plane metres here would silently
-    produce meaningless zones.
+  * `classify_line(bounce_x_px, frame_width)` — takes a PIXEL coordinate plus the
+    frame dimension and normalises internally; passing ground-plane metres here
+    would silently produce meaningless zones.
+
+LENGTH IS THE ONE THAT CHANGED
+------------------------------
+`length` used to come from `classify_length(bounce_y_px, frame_height)` — a
+fraction of the frame height, i.e. how far down the PICTURE the ball landed. It
+now comes from `classify_length_m(PITCH_LENGTH_M - bounce.ground_y_m)`: metres
+along the pitch from the batting crease, computed only when the geometry was
+measured on this video (operator corners or the pitch-keypoint quad). Same
+formula for both sources because both put y = 0 at the non-batting end and
+y = PITCH_LENGTH_M at the batting end.
 """
 
 from __future__ import annotations
@@ -45,11 +54,12 @@ from typing import Optional
 
 import numpy as np
 
-from ..core.constants import MAX_EARLY_POSITIONS
+from ..core.constants import MAX_EARLY_POSITIONS, PITCH_LENGTH_M
 from ..schemas.tracking import Bounce, Bowling, SpeedSample, Trajectory
 from .calibration import pixel_to_ground
+from .pitch_geometry import PitchGeometry
 from .trajectory import (
-    classify_length,
+    classify_length_m,
     classify_line,
     compute_bounce_angle,
     compute_release_angle,
@@ -72,6 +82,7 @@ def analyse_delivery(
     impute_missing_speeds: bool = False,
     speeds_from: Optional[list[float]] = None,
     geometry_calibrated: bool = False,
+    pitch_geometry: Optional[PitchGeometry] = None,
 ) -> tuple[Optional[int], Bounce, Bowling, list[SpeedSample], list[str]]:
     """
     Derive release, bounce, speed, length, line, swing and angles for one delivery.
@@ -105,6 +116,13 @@ def analyse_delivery(
         suppression path unreachable, which is exactly how a fabricated
         42-199 km/h range reached `result.json` in the first place. Callers that
         genuinely have measured pitch corners pass `geometry_calibrated=True`.
+    pitch_geometry
+        The delivery's own pitch-keypoint geometry (`analytics/pitch_geometry`),
+        when the quad was detected on this footage. It wins over `homography`,
+        because it measures THIS video's pitch and carries the batter's end —
+        and when it is present the 2x/-20 speed heuristic is NOT applied, since
+        a measured quad needs no hand-tuned correction. Passing it implies the
+        geometry is calibrated.
 
     Returns
     -------
@@ -113,8 +131,15 @@ def analyse_delivery(
     flags: list[str] = []
     detected = trajectory.detected_points()
     bowling = Bowling()
-    bowling.geometry_calibrated = bool(geometry_calibrated)
     samples: list[SpeedSample] = []
+
+    # Which ground plane, if any, may be trusted.
+    ground_homography = homography
+    if pitch_geometry is not None:
+        ground_homography = pitch_geometry.homography
+        geometry_calibrated = True
+        flags.append("ground_plane_from_pitch_keypoints")
+    bowling.geometry_calibrated = bool(geometry_calibrated)
 
     if not geometry_calibrated:
         flags.append("pitch_calibration_required")
@@ -151,7 +176,7 @@ def analyse_delivery(
         flags.append("release_frame_heuristic")
 
     # ── Bounce ──────────────────────────────────────────────────────────────
-    bounce_idx = detect_bounce(traj_list, homography)
+    bounce_idx = detect_bounce(traj_list, ground_homography)
     bounce_method = "score"
 
     if bounce_idx is not None:
@@ -172,7 +197,7 @@ def analyse_delivery(
     # this video. The PIXEL position is real tracked data and is always kept.
     gbx = gby = None
     if geometry_calibrated:
-        gbx, gby = pixel_to_ground((bx, by), homography)
+        gbx, gby = pixel_to_ground((bx, by), ground_homography)
     bounce = Bounce(
         detected=bounce_detected,
         original_frame=bounce_point.original_frame,
@@ -215,12 +240,12 @@ def analyse_delivery(
     # then a shorter 6-detection fit. compute_release_speed already returns None
     # for implausible results, so there is no clamping anywhere here.
     early = positions[:MAX_EARLY_POSITIONS]
-    spd = compute_release_speed(early, fps, homography)
+    spd = compute_release_speed(early, fps, ground_homography, apply_scale_offset=False)
     used = early if spd is not None else None
 
     if spd is None and len(positions) >= 4:
         shorter = positions[:6]
-        spd = compute_release_speed(shorter, fps, homography)
+        spd = compute_release_speed(shorter, fps, ground_homography, apply_scale_offset=False)
         if spd is not None:
             used = shorter
 
@@ -229,7 +254,7 @@ def analyse_delivery(
     if used:
         t0 = used[0][1]
         for (px, py), frame_no in used:
-            gx, gy = pixel_to_ground((px, py), homography)
+            gx, gy = pixel_to_ground((px, py), ground_homography)
             samples.append(
                 SpeedSample(
                     original_frame=int(frame_no),
@@ -266,14 +291,24 @@ def analyse_delivery(
             flags.append("speed_unavailable")
 
     # ── Length / line / swing / angles ─────────────────────────────────────
-    # NOTE: pixel coordinates, not ground-plane metres — see module docstring.
-    if height:
-        bowling.length = classify_length(by, height)
+    # Length: METRES along the pitch, from the batting crease. `ground_y_m` runs
+    # 0 at the non-batting end to PITCH_LENGTH_M at the batting end for every
+    # measured geometry, so one subtraction gives the distance from the crease.
+    # A bounce that projects off the measured pitch gets null, not a zone.
+    length_m = (PITCH_LENGTH_M - gby) if gby is not None else None
+    bowling.length = classify_length_m(length_m)
+    if bowling.length is None:
+        flags.append("length_unavailable")
+
+    # Line: still the ported IMAGE rule. Leg and off cannot be derived from a
+    # pitch quad — the quad says nothing about which way the batter faces — and
+    # inventing an orientation here would be exactly the guess this codebase
+    # refuses to make.
     if width:
         bowling.line = classify_line(bx, width)
 
-    bowling.swing = estimate_swing(traj_list, bounce_idx, homography)
+    bowling.swing = estimate_swing(traj_list, bounce_idx, ground_homography)
     bowling.release_angle = compute_release_angle(positions)
-    bowling.bounce_angle = compute_bounce_angle(traj_list, bounce_idx, homography)
+    bowling.bounce_angle = compute_bounce_angle(traj_list, bounce_idx, ground_homography)
 
     return release_frame, bounce, bowling, samples, flags
