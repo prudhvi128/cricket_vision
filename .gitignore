@@ -60,10 +60,9 @@ yarn-error.log*
 .env.*
 
 # Large model/video files
-*.ckpt
+
 *.mp4
-*.pth
-*.pt
+
 *.onnx
 .env
 .env.*
