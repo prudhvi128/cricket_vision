@@ -93,7 +93,7 @@ class PipelineResult:
         )
         shots = _tally((d.get("shot") or {}).get("type") for d in deliveries)
 
-        return {
+        document = {
             "schema_version": SCHEMA_VERSION,
             "pipeline_version": PIPELINE_VERSION,
             "analysis_id": self.analysis_id,
@@ -155,6 +155,13 @@ class PipelineResult:
             "deliveries": deliveries,
             "quarantine": self.quarantined,
         }
+        # The OPTIONAL local pitch-BOX detector's own record: frames offered,
+        # frames the model saw, boxes found, errors. Added ONLY when it ran -
+        # with the feature OFF this document is byte-identical to one produced
+        # before the feature existed. Configuration and counts only.
+        if self.tracking and self.tracking.pitch_box_summary is not None:
+            document["pitch_box_detection"] = self.tracking.pitch_box_summary
+        return document
 
 
 def _tally(values) -> dict[str, int]:

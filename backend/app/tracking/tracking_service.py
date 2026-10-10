@@ -51,7 +51,7 @@ from typing import Callable, Optional
 import cv2
 import numpy as np
 
-from ..core.config import PipelineConfig, Paths
+from ..core.config import PITCH_BOX_CONFIG, PipelineConfig, Paths
 from ..core.constants import (
     PITCH_CORRIDOR,
     PITCH_EVENT_GUARD_FRAMES,
@@ -75,6 +75,11 @@ from ..analytics.pitch_geometry import (
     flight_to_bounce,
 )
 from ..pitch.service import PitchService
+from ..pitch.local_box_detector import (
+    LocalPitchBoxDetector,
+    PitchBoxSlot,
+    describe_pitch_box,
+)
 from ..segmentation.purity_validator import (
     ClipValidator,
     SINGLE_EVENT,
@@ -252,6 +257,13 @@ class TrackingResult:
     # speed), how many were refused and why, and the stated assumptions. Empty
     # when no pitch detector ran. Nothing here is a credential.
     pitch_geometry_stats: dict = field(default_factory=dict)
+    # How the OPTIONAL LOCAL pitch-BOX detector ran: frames offered, frames the
+    # model actually saw, boxes found, errors. Null whenever the feature was
+    # OFF, in which case the key is omitted from tracking.json entirely so an
+    # OFF run's output is identical to a build that never had this feature.
+    # The boxes themselves are stored per delivery, under
+    # `delivery.pitch.box_estimate`, as APPROXIMATE corners only.
+    pitch_box_summary: Optional[dict] = None
 
     def time_stage(self, name: str, seconds: float) -> None:
         self.stage_seconds[name] = (
@@ -267,7 +279,7 @@ class TrackingResult:
         `result.json`, so a consumer can tell what the tracker actually measured
         from what was inferred later.
         """
-        return {
+        document = {
             "schema_version": SCHEMA_VERSION,
             "pipeline_version": PIPELINE_VERSION,
             "analysis_id": self.analysis_id,
@@ -354,6 +366,12 @@ class TrackingResult:
             "validation": self.validation.as_dict() if self.validation else None,
             "deliveries": [d.as_dict() for d in self.deliveries],
         }
+        # Added ONLY when the local pitch-box detector ran: with the feature
+        # OFF the document is byte-identical to one produced before this
+        # feature existed.
+        if self.pitch_box_summary is not None:
+            document["pitch_box_detection"] = self.pitch_box_summary
+        return document
 
 
 class TrackingService:
@@ -369,11 +387,17 @@ class TrackingService:
         config: Optional[PipelineConfig] = None,
         *,
         pitch_service: Optional[PitchService] = None,
+        pitch_box_detector=None,
     ) -> None:
         self.config = config or PipelineConfig()
         # Injected so a test can drive the pitch state machine without a
         # network. Left alone, `_run` builds one from the environment.
         self._pitch_service = pitch_service
+        # Injected so a test can drive the local pitch-BOX detector with a
+        # fixed box. Left alone, `_run` builds one only when
+        # CRICKET_PITCH_BOX_MODEL names a weights file — the feature is OFF
+        # by default, and an analysis without it pays nothing at all.
+        self._pitch_box_detector = pitch_box_detector
 
     # ── Public API ───────────────────────────────────────────────────────────
     def analyse(
@@ -458,6 +482,40 @@ class TrackingService:
             if self._pitch_service is not None
             else PitchService(width=width, height=height)
         )
+
+        # ── OPTIONAL local pitch-BOX detection ────────────────────────────────
+        # A local YOLO model that answers with a BOX around the pitch, turned
+        # into four APPROXIMATE corners. OFF unless CRICKET_PITCH_BOX_MODEL
+        # names a weights file (or a detector was injected by a test). When OFF
+        # nothing below exists and the output is identical to a build that never
+        # had this feature. When ON the inference still never runs on this
+        # thread: `PitchBoxSlot` drains a one-deep, latest-wins queue.
+        box_cfg = PITCH_BOX_CONFIG
+        box_detector = self._pitch_box_detector
+        box_slot: Optional[PitchBoxSlot] = None
+        if box_detector is not None:
+            log.info("pitch box detector: ON (injected by caller)")
+        else:
+            log.info("%s", describe_pitch_box(box_cfg))
+        if box_cfg.enabled or box_detector is not None:
+            if box_detector is None:
+                box_path = box_cfg.model_path
+                if box_path is not None and box_path.is_file():
+                    box_detector = LocalPitchBoxDetector(
+                        str(box_path), conf=box_cfg.conf, imgsz=box_cfg.imgsz
+                    )
+                else:
+                    # Configured but missing: the analysis runs exactly as it
+                    # would have without the feature, and says so loudly rather
+                    # than pretending the detector ran.
+                    log.error(
+                        "pitch box detector configured but weights not found at %s; "
+                        "continuing without it", box_path,
+                    )
+            if box_detector is not None:
+                box_slot = PitchBoxSlot(
+                    box_detector, every_n=box_cfg.every_n, inset=box_cfg.inset
+                )
 
         # The segmenter owns delivery identity. The Kalman filter smooths the ball
         # between frames; it does not decide where one batting event ends.
@@ -849,6 +907,17 @@ class TrackingService:
                 return
 
             delivery.pitch = pitch_block
+            # ── The LOCAL box detector's own answer, stored and USED for
+            # nothing. Four APPROXIMATE corners from a rectangle, labelled
+            # `corners_source="box_estimate"` so no consumer can mistake them
+            # for the measured quad above. It never touches `pitch.corners`,
+            # the homography, `geometry_calibrated`, or any measurement — a
+            # delivery that already has real calibrated corners gets the
+            # estimate stored alongside them, not instead of them. `None` means
+            # the box detector had produced nothing at or before this
+            # delivery's window, which is recorded as exactly that.
+            if box_slot is not None:
+                pitch_block["box_estimate"] = box_slot.latest_before(window_end)
             pitch_geom_stats["deliveries"] += 1
             if pitch_geom is not None:
                 pitch_geom_stats["deliveries_with_geometry"] += 1
@@ -983,6 +1052,13 @@ class TrackingService:
                 scene_cut=is_scene_cut,
                 black=is_black,
             )
+
+            # 2c. Optional LOCAL pitch-BOX detection. Offered on every Nth
+            #     frame; the inference itself runs on a worker thread, so this
+            #     is one integer modulo per frame and nothing else. OFF means
+            #     `box_slot` is None and this is one attribute check.
+            if box_slot is not None:
+                box_slot.offer(frame_number, frame)
 
             # 3. Detection — the only YOLO call in the system.
             cx, cy, conf = detector.detect_with_confidence(frame)
@@ -1239,6 +1315,14 @@ class TrackingService:
         # detection that cannot answer in five seconds will not answer at all.
         pitch.stop()
         result.pitch_summary = pitch.summary()
+        # Same drain for the local pitch-BOX detector: finish (or abandon) the
+        # one frame it may still hold, then record the tally. The counts are
+        # logged here as well as persisted, so a run report never has to guess
+        # how much of the video the box detector actually saw.
+        if box_slot is not None:
+            box_slot.stop()
+            result.pitch_box_summary = box_slot.summary()
+            log.info("Pitch box detector summary: %s", result.pitch_box_summary)
         # Closed, not deleted, and queued like every other candidate so it gets
         # the same merge opportunity. If it holds too few confirmed detections to
         # be a delivery, `emit_event` records why and drops it.

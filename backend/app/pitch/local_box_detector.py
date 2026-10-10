@@ -35,6 +35,7 @@ from __future__ import annotations
 import logging
 import queue
 import threading
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
@@ -42,6 +43,13 @@ from typing import Any, Optional
 from .box_corners import box_to_corners, corners_as_dict, corners_valid
 
 log = logging.getLogger(__name__)
+
+# How many finished estimates the slot remembers. This is a LOOKBACK, not a
+# log: at the default every_n=15 it covers 3,840 source frames (2.5 minutes at
+# 25 fps) of delivery windows, and the loop only ever asks "what was the newest
+# estimate at or before this delivery's window". Bounded so a long video costs
+# a few hundred kilobytes, never a growing list.
+PITCH_BOX_HISTORY = 256
 
 # Ultralytics' own model cache, keyed by the RESOLVED path. There is no
 # pre-existing YOLO cache in this project to reuse — `tracking/detector.py`
@@ -193,12 +201,13 @@ class PitchBoxSlot:
     The loop's one call site: offer a frame, never wait, never raise.
 
     Every `every_n`-th frame is offered; the worker thread runs the detector on
-    whichever offered frame is current, keeping only the LATEST finished
-    estimate. `latest_before(frame)` then answers, for a delivery being
-    finalised, "what did the box detector most recently say about a frame at or
-    before this one?" — never about a frame in the future, because a delivery
-    emitted late (merge deferral) must not be handed an estimate measured after
-    its own window ended.
+    whichever offered frame is current, keeping the last `PITCH_BOX_HISTORY`
+    finished estimates. `latest_before(frame)` then answers, for a delivery
+    being finalised, "what did the box detector most recently say about a frame
+    at or before this one?" — never about a frame in the future, because a
+    delivery emitted late (merge deferral) must not be handed an estimate
+    measured after its own window ended. Remembering the last few is what lets
+    it still answer when the newest estimate is already past that window.
     """
 
     def __init__(self, detector: LocalPitchBoxDetector, *, every_n: int = 15,
@@ -211,7 +220,7 @@ class PitchBoxSlot:
 
         self._queue: "queue.Queue[Optional[tuple]]" = queue.Queue(maxsize=1)
         self._lock = threading.Lock()
-        self._latest: Optional[dict] = None
+        self._history: deque = deque(maxlen=PITCH_BOX_HISTORY)
         self._stopped = False
         self._thread = threading.Thread(
             target=self._worker, name="pitch-box-detector", daemon=True
@@ -237,17 +246,35 @@ class PitchBoxSlot:
                 self.evicted += 1
 
     def latest_before(self, max_frame: Optional[int]) -> Optional[dict]:
-        """A copy of the newest estimate measured at or before `max_frame`."""
-        with self._lock:
-            est = self._latest
-        if est is None:
-            return None
-        if max_frame is not None and est["frame_index"] > int(max_frame):
+        """A copy of the newest estimate measured at or before `max_frame`.
+
+        `None` means the detector had produced nothing usable inside that
+        window — either it has not run yet or its newest estimate is already
+        past `max_frame` and none of the remembered ones reach back that far.
+
+        Copied all the way down — the stored corner lists and box are rebuilt
+        — so whatever the caller does with the answer cannot rewrite what the
+        detector last saw.
+        """
+        if max_frame is None:
+            with self._lock:
+                if not self._history:
+                    return None
+                estimate = self._history[-1]
+        else:
+            limit = int(max_frame)
+            estimate = None
+            with self._lock:
+                for candidate in reversed(self._history):
+                    if candidate["frame_index"] <= limit:
+                        estimate = candidate
+                        break
+        if estimate is None:
             return None
         return {
-            **est,
-            "corners": dict(est["corners"]),
-            "box": list(est["box"]),
+            **estimate,
+            "corners": {k: [v[0], v[1]] for k, v in estimate["corners"].items()},
+            "box": list(estimate["box"]),
         }
 
     def summary(self) -> dict:
@@ -309,7 +336,7 @@ class PitchBoxSlot:
             "frame_index": int(frame_number),
         }
         with self._lock:
-            self._latest = estimate
+            self._history.append(estimate)
 
 
 def pitch_box_enabled(cfg) -> bool:
