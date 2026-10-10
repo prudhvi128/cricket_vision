@@ -1,0 +1,24 @@
+{
+  "video": "C:\\Users\\LENOVO\\Desktop\\New folder\\real_cricket.mp4",
+  "analysis_id": "pitchbox_off_prechange",
+  "cricket_pitch_box_model": null,
+  "roboflow_key_set": true,
+  "deliveries_tracking": 40,
+  "deliveries_result": 37,
+  "quarantined": 3,
+  "clips_written": 40,
+  "frames_decoded": 13565,
+  "wall_seconds": 608.6,
+  "timings_sec": {
+    "tracking": 541.679,
+    "shot": 19.494,
+    "overlay": 47.332,
+    "total": 608.514
+  },
+  "trajectory_points": 1058,
+  "detected_points": 538,
+  "tracking_fingerprint": "50142fdb4e9725975e6fa219f3f4ff3dc29836127da635d4a1d71fa31c6dabf0",
+  "pitch_box_detection": null,
+  "deliveries_with_box_estimate": 0,
+  "sample_frames": []
+}

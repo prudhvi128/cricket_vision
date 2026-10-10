@@ -1,0 +1,49 @@
+{
+  "video": "C:\\Users\\LENOVO\\Desktop\\New folder\\real_cricket.mp4",
+  "analysis_id": "pitchbox_on_postchange",
+  "cricket_pitch_box_model": "pitch_detect.pt",
+  "roboflow_key_set": true,
+  "deliveries_tracking": 40,
+  "deliveries_result": 37,
+  "quarantined": 3,
+  "clips_written": 40,
+  "frames_decoded": 13565,
+  "wall_seconds": 589.9,
+  "timings_sec": {
+    "tracking": 526.088,
+    "shot": 16.704,
+    "overlay": 46.986,
+    "total": 589.782
+  },
+  "trajectory_points": 1058,
+  "detected_points": 538,
+  "tracking_fingerprint": "50142fdb4e9725975e6fa219f3f4ff3dc29836127da635d4a1d71fa31c6dabf0",
+  "pitch_box_detection": {
+    "model_path": "C:\\Users\\LENOVO\\Desktop\\New folder\\backend\\models\\pitch_detect.pt",
+    "conf": 0.25,
+    "imgsz": 640,
+    "frames_seen": 904,
+    "boxes": 167,
+    "no_box": 737,
+    "errors": 0,
+    "last_error": null,
+    "enabled": true,
+    "every_n": 15,
+    "inset": 0.08,
+    "offered": 904,
+    "evicted": 0
+  },
+  "deliveries_with_box_estimate": 37,
+  "sample_frames": [
+    "..\\docs\\diagnostics\\pitch_box_samples\\frame_00135.jpg",
+    "..\\docs\\diagnostics\\pitch_box_samples\\frame_00345.jpg",
+    "..\\docs\\diagnostics\\pitch_box_samples\\frame_00855.jpg",
+    "..\\docs\\diagnostics\\pitch_box_samples\\frame_01395.jpg",
+    "..\\docs\\diagnostics\\pitch_box_samples\\frame_01650.jpg",
+    "..\\docs\\diagnostics\\pitch_box_samples\\frame_01860.jpg",
+    "..\\docs\\diagnostics\\pitch_box_samples\\frame_02160.jpg",
+    "..\\docs\\diagnostics\\pitch_box_samples\\frame_02805.jpg",
+    "..\\docs\\diagnostics\\pitch_box_samples\\frame_03090.jpg",
+    "..\\docs\\diagnostics\\pitch_box_samples\\frame_04050.jpg"
+  ]
+}

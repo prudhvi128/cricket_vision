@@ -1,0 +1,244 @@
+C:\Users\LENOVO\AppData\Local\Programs\Python\Python310\lib\site-packages\inference_sdk\http\client.py:121: InferenceSDKGuidanceWarning: This client sends the Roboflow API key through the legacy channel (query parameter / request body). Sending it as the `Authorization: Bearer <api_key>` header is recommended and works with inference servers from release 1.5.0 onward. Opt in with InferenceConfiguration(api_key_transport='header'); use 'both' for a transition period safe with every server version. Set api_key_transport='legacy' explicitly to keep the current behaviour and silence this warning.
+  warnings.warn(
+
+Failed to load OpenH264 library: openh264-1.8.0-win64.dll
+	Please check environment and/or download library: https://github.com/cisco/openh264/releases
+
+[libopenh264 @ 00000290bc2ab100] Incorrect library version loaded
+[ERROR:0@6.922] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@6.923] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc2ad100] Incorrect library version loaded
+[ERROR:0@17.117] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@17.123] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc2aba40] Incorrect library version loaded
+[ERROR:0@36.283] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@36.283] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc2a9ec0] Incorrect library version loaded
+[ERROR:0@55.583] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@55.585] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc2ad100] Incorrect library version loaded
+[ERROR:0@65.728] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@65.729] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc0beb00] Incorrect library version loaded
+[ERROR:0@75.338] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@75.338] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc0be200] Incorrect library version loaded
+[ERROR:0@86.782] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@86.784] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc0bd8c0] Incorrect library version loaded
+[ERROR:0@109.766] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@109.768] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc0be680] Incorrect library version loaded
+[ERROR:0@122.523] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@122.524] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc0bd8c0] Incorrect library version loaded
+[ERROR:0@156.962] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@156.965] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb0bb280] Incorrect library version loaded
+[ERROR:0@167.570] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@167.570] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb0ba500] Incorrect library version loaded
+[ERROR:0@177.648] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@177.648] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb0bb740] Incorrect library version loaded
+[ERROR:0@188.228] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@188.228] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb0bb280] Incorrect library version loaded
+[ERROR:0@196.697] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@196.697] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08c300] Incorrect library version loaded
+[ERROR:0@221.476] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@221.480] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08f500] Incorrect library version loaded
+[ERROR:0@239.707] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@239.709] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08f9c0] Incorrect library version loaded
+[ERROR:0@247.072] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@247.072] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08e780] Incorrect library version loaded
+[ERROR:0@255.451] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@255.451] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb0a3440] Incorrect library version loaded
+[ERROR:0@290.385] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@290.385] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb0a3440] Incorrect library version loaded
+[ERROR:0@300.693] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@300.697] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb0a2200] Incorrect library version loaded
+[ERROR:0@307.655] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@307.655] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb0a0fc0] Incorrect library version loaded
+[ERROR:0@316.271] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@316.271] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba025f00] Incorrect library version loaded
+[ERROR:0@341.813] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@341.815] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba026800] Incorrect library version loaded
+[ERROR:0@349.995] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@350.003] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba026c80] Incorrect library version loaded
+[ERROR:0@358.090] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@358.090] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba026380] Incorrect library version loaded
+[ERROR:0@365.918] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@365.919] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba00f740] Incorrect library version loaded
+[ERROR:0@375.012] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@375.013] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba0104c0] Incorrect library version loaded
+[ERROR:0@381.975] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@381.975] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba011280] Incorrect library version loaded
+[ERROR:0@392.911] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@392.911] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba012040] Incorrect library version loaded
+[ERROR:0@403.349] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@403.350] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08acc0] Incorrect library version loaded
+[ERROR:0@410.153] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@410.153] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08c840] Incorrect library version loaded
+[ERROR:0@420.906] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@420.906] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08bf00] Incorrect library version loaded
+[ERROR:0@429.008] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@429.009] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08a840] Incorrect library version loaded
+[ERROR:0@439.461] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@439.465] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08b180] Incorrect library version loaded
+[ERROR:0@448.227] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@448.233] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08c3c0] Incorrect library version loaded
+[ERROR:0@450.378] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@450.382] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08c3c0] Incorrect library version loaded
+[ERROR:0@455.671] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@455.671] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb08ba80] Incorrect library version loaded
+[ERROR:0@457.660] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@457.661] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb089a80] Incorrect library version loaded
+[ERROR:0@479.098] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@479.098] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb35d4c0] Incorrect library version loaded
+[ERROR:0@485.887] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@485.887] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+3 of 40 clips quarantined by the purity gate
+In-memory shot frames unusable (20 of 30 sampled positions absent (e.g. 2)); re-reading the clip file (permitted — the source video is not reopened)
+In-memory shot frames unusable (21 of 30 sampled positions absent (e.g. 2)); re-reading the clip file (permitted — the source video is not reopened)
+In-memory shot frames unusable (21 of 30 sampled positions absent (e.g. 2)); re-reading the clip file (permitted — the source video is not reopened)
+In-memory shot frames unusable (22 of 30 sampled positions absent (e.g. 3)); re-reading the clip file (permitted — the source video is not reopened)
+In-memory shot frames unusable (23 of 30 sampled positions absent (e.g. 6)); re-reading the clip file (permitted — the source video is not reopened)
+In-memory shot frames unusable (18 of 30 sampled positions absent (e.g. 2)); re-reading the clip file (permitted — the source video is not reopened)
+[libopenh264 @ 00000290ba29d900] Incorrect library version loaded
+[ERROR:0@561.216] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@561.217] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b85a1980] Incorrect library version loaded
+[ERROR:0@562.866] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@562.866] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba362ec0] Incorrect library version loaded
+[ERROR:0@563.663] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@563.664] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba3b1640] Incorrect library version loaded
+[ERROR:0@565.071] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@565.071] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb7fc980] Incorrect library version loaded
+[ERROR:0@566.636] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@566.637] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc0c5100] Incorrect library version loaded
+[ERROR:0@567.901] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@567.901] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b9eb6480] Incorrect library version loaded
+[ERROR:0@568.844] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@568.844] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b8591c80] Incorrect library version loaded
+[ERROR:0@569.636] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@569.636] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb821900] Incorrect library version loaded
+[ERROR:0@570.833] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@570.833] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bc22dc00] Incorrect library version loaded
+[ERROR:0@572.087] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@572.087] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bbe6d8c0] Incorrect library version loaded
+[ERROR:0@573.432] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@573.433] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb7f7a00] Incorrect library version loaded
+[ERROR:0@574.920] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@574.920] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb323340] Incorrect library version loaded
+[ERROR:0@576.185] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@576.185] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bae7e740] Incorrect library version loaded
+[ERROR:0@577.420] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@577.420] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba49a080] Incorrect library version loaded
+[ERROR:0@578.206] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@578.206] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bae5edc0] Incorrect library version loaded
+[ERROR:0@579.928] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@579.929] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba49d2c0] Incorrect library version loaded
+[ERROR:0@581.047] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@581.047] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba4b5f40] Incorrect library version loaded
+[ERROR:0@582.747] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@582.747] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba2b4240] Incorrect library version loaded
+[ERROR:0@583.671] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@583.671] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b8774480] Incorrect library version loaded
+[ERROR:0@585.061] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@585.061] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bbbdf880] Incorrect library version loaded
+[ERROR:0@586.756] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@586.756] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b8798280] Incorrect library version loaded
+[ERROR:0@588.158] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@588.159] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b874cc00] Incorrect library version loaded
+[ERROR:0@589.445] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@589.447] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b8755080] Incorrect library version loaded
+[ERROR:0@590.759] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@590.759] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b879f080] Incorrect library version loaded
+[ERROR:0@591.612] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@591.612] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb366680] Incorrect library version loaded
+[ERROR:0@592.755] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@592.755] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba842fc0] Incorrect library version loaded
+[ERROR:0@594.185] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@594.185] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bbf60980] Incorrect library version loaded
+[ERROR:0@595.515] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@595.515] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b85994c0] Incorrect library version loaded
+[ERROR:0@596.610] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@596.610] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba840240] Incorrect library version loaded
+[ERROR:0@598.008] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@598.008] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b87a0740] Incorrect library version loaded
+[ERROR:0@599.445] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@599.445] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b9ebd940] Incorrect library version loaded
+[ERROR:0@600.773] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@600.773] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b87a1500] Incorrect library version loaded
+[ERROR:0@601.705] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@601.705] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290ba81d100] Incorrect library version loaded
+[ERROR:0@603.006] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@603.006] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b8597980] Incorrect library version loaded
+[ERROR:0@604.126] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@604.126] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290bb5df040] Incorrect library version loaded
+[ERROR:0@605.235] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@605.235] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter
+[libopenh264 @ 00000290b9c62e40] Incorrect library version loaded
+[ERROR:0@606.922] global cap_ffmpeg_impl.hpp:3194 open Could not open codec libopenh264, error: Unspecified error (-22)
+[ERROR:0@606.922] global cap_ffmpeg_impl.hpp:3211 open VIDEOIO/FFMPEG: Failed to initialize VideoWriter

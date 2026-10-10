@@ -1,0 +1,26 @@
+==============================================================================
+pitch-box comparison run
+==============================================================================
+  video                C:\Users\LENOVO\Desktop\New folder\real_cricket.mp4
+  analysis             pitchbox_off_prechange
+  CRICKET_PITCH_BOX_MODEL = ''  -> OFF
+  ROBOFLOW key set     yes
+🚀 Detector using device: 0
+✅ YOLO model loaded
+📹 Video FPS (from metadata): 25.000
+
+------------------------------------------------------------------------------
+  deliveries (tracking pass)   40
+  deliveries (result.json)     37
+  quarantined                  3
+  clips written                40
+  frames decoded               13565
+  wall seconds                 608.6
+  tracking stage seconds       0  (in-loop stages: 602.8)
+  timings                      {'tracking': 541.679, 'shot': 19.494, 'overlay': 47.332, 'total': 608.514}
+  trajectory points            1058 (538 detected)
+  tracking fingerprint         50142fdb4e9725975e6fa219f3f4ff3dc29836127da635d4a1d71fa31c6dabf0
+  deliveries with box_estimate 0
+  pitch box stats              None
+  summary written              docs\diagnostics\pitchbox_off_prechange.json
+  artefacts                    C:\Users\LENOVO\Desktop\New folder\data\runs\pitchbox_off_prechange
