@@ -168,7 +168,12 @@ def main() -> int:
         print(f"video not found: {video}")
         return 1
 
-    from app.core.config import Paths, PipelineConfig, analysis_root
+    from app.core.config import (
+        PITCH_BOX_CONFIG,
+        Paths,
+        PipelineConfig,
+        analysis_root,
+    )
     from app.pipeline.analysis_pipeline import UnifiedPipeline
     from app.tracking.detector import BallDetector
 
@@ -183,9 +188,13 @@ def main() -> int:
     print("=" * 78)
     print(f"  video                {video}")
     print(f"  analysis             {args.analysis_id}")
-    print(f"  CRICKET_PITCH_BOX_MODEL = {box_model!r}"
-          f"  -> {'ON' if box_model else 'OFF'}")
-    print(f"  ROBOFLOW key set     {'yes' if os.environ.get('ROBOFLOW_API_KEY') else 'no'}")
+    print(f"  CRICKET_PITCH_BOX_MODEL = {box_model!r}")
+    print(f"  pitch box detector   "
+          f"{'ON' if PITCH_BOX_CONFIG.enabled else 'OFF'}"
+          f"  ({PITCH_BOX_CONFIG.model_path})")
+    print(f"  ROBOFLOW key set     {'yes' if os.environ.get('ROBOFLOW_API_KEY') else 'no'}"
+          f"  (remote pitch keypoints are opt-in and are off unless"
+          f" CRICKET_ROBOFLOW_PITCH is set)")
 
     detector = BallDetector()
     pipeline = UnifiedPipeline(detector=detector, config=PipelineConfig())
@@ -212,6 +221,16 @@ def main() -> int:
         1 for d in deliveries
         if isinstance((d.get("pitch") or {}).get("box_estimate"), dict)
     )
+    # Ground-plane metrics and the (abandoned) remote keypoint path.
+    bowling = [d.get("bowling") or {} for d in deliveries]
+    with_speed = sum(1 for b in bowling if b.get("speed_kmh") is not None)
+    with_line = sum(1 for b in bowling if b.get("line") is not None)
+    with_length = sum(1 for b in bowling if b.get("length") is not None)
+    with_swing = sum(1 for b in bowling if b.get("swing") is not None)
+    with_release = sum(1 for b in bowling if b.get("release_angle") is not None)
+    calibrated = sum(1 for b in bowling if b.get("geometry_calibrated") is True)
+    keypoint = doc.get("pitch_detection") or {}
+    roboflow_requests = int(keypoint.get("submitted") or 0)
 
     print("\n" + "-" * 78)
     print(f"  deliveries (tracking pass)   {len(tr.deliveries)}")
@@ -230,6 +249,12 @@ def main() -> int:
     print(f"  tracking fingerprint         {tracking_fingerprint(deliveries)}")
     print(f"  deliveries with box_estimate {with_box}")
     print(f"  pitch box stats              {box_stats}")
+    print(f"  roboflow requests            {roboflow_requests}"
+          f"  (pitch_detection: {keypoint.get('enabled')=},"
+          f" {keypoint.get('failures')=})")
+    print(f"  geometry_calibrated          {calibrated}/{len(deliveries)}")
+    print(f"  with speed/line/length/swing {with_speed}/{with_line}"
+          f"/{with_length}/{with_swing}   release_angle {with_release}")
 
     samples = []
     if args.samples_dir:
@@ -240,7 +265,13 @@ def main() -> int:
         "video": str(video),
         "analysis_id": args.analysis_id,
         "cricket_pitch_box_model": box_model or None,
+        "pitch_box_config": PITCH_BOX_CONFIG.metadata(),
         "roboflow_key_set": bool(os.environ.get("ROBOFLOW_API_KEY")),
+        "roboflow_requests": roboflow_requests,
+        "roboflow_detection": {
+            k: keypoint.get(k)
+            for k in ("enabled", "submitted", "detections", "failures", "last_error")
+        },
         "deliveries_tracking": len(tr.deliveries),
         "deliveries_result": len(deliveries),
         "quarantined": len(doc.get("quarantine") or []),
@@ -253,6 +284,12 @@ def main() -> int:
         "tracking_fingerprint": tracking_fingerprint(deliveries),
         "pitch_box_detection": box_stats,
         "deliveries_with_box_estimate": with_box,
+        "geometry_calibrated": calibrated,
+        "with_speed": with_speed,
+        "with_line": with_line,
+        "with_length": with_length,
+        "with_swing": with_swing,
+        "with_release_angle": with_release,
         "sample_frames": samples,
     }
     if args.summary:

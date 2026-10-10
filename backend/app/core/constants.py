@@ -615,17 +615,20 @@ PITCH_DROUGHT_INTERVAL_MULTIPLIER_IN_EVENT = 4  # inside a delivery: still worth
 PITCH_DETECTOR_REARM_FRAMES = 600
 
 # ═══════════════════════════════════════════════════════════════════════════
-# OPTIONAL LOCAL PITCH-BOX DETECTION (ultralytics, local weights)
+# LOCAL PITCH-BOX DETECTION (ultralytics, local weights)
 # ═══════════════════════════════════════════════════════════════════════════
-# A second, independent and entirely optional pitch detector: a local YOLO
-# model that answers with a BOX around the pitch rather than with keypoints.
-# The box becomes four APPROXIMATE corners (app/pitch/box_corners.py). Those
-# are guesses and are recorded as such: they never become `pitch.corners`,
-# never produce a homography, and can never make an analysis `geometry_calibrated`.
+# The pitch detector: a local YOLO model that answers with a BOX around the
+# pitch rather than with keypoints. The box becomes four APPROXIMATE corners
+# (app/pitch/box_corners.py). Those are guesses and are recorded as such: they
+# never become `pitch.corners`, never produce a homography, and can never make
+# an analysis `geometry_calibrated`.
 #
-# The feature is OFF unless `CRICKET_PITCH_BOX_MODEL` names the weights file
-# (a bare filename resolves against backend/models/; the file is never copied
-# or renamed). Every value below is inert until then.
+# The shipped weights ARE the detection source, so the feature is ON by
+# default. `CRICKET_PITCH_BOX_MODEL` may name a different weights file (a bare
+# filename resolves against backend/models/; the file is never copied or
+# renamed) or one of PITCH_BOX_OFF_TOKENS to run without it.
+PITCH_BOX_DEFAULT_WEIGHTS = "pitch_detect.pt"
+PITCH_BOX_OFF_TOKENS = frozenset({"off", "none", "disabled", "0", "false"})
 PITCH_BOX_CONF_DEFAULT = 0.25
 PITCH_BOX_INSET_DEFAULT = 0.08
 PITCH_BOX_EVERY_N_DEFAULT = 15

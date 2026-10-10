@@ -51,3 +51,13 @@ os.environ.setdefault("CRICKET_UPLOADS_DIR", str(_RUNS_DIR / "uploads"))
 # printed. Tests that want the feature inject their own detector with their own
 # config (see tests/integration/test_pitch_pipeline.py).
 os.environ["ROBOFLOW_API_KEY"] = ""
+
+# Keep the local pitch-BOX detector OFF under test.
+#
+# It is ON by default — the shipped backend/models/pitch_detect.pt IS the
+# pitch detection source — but a synthetic 200-frame test video does not need
+# a 22 MiB YOLO model loaded and inferring on a worker thread in every tracking
+# test. `off` is the documented spelling (see PitchBoxConfig), and the tests
+# that want the feature inject their own detector with their own box
+# (tests/integration/test_pitch_box_feature.py).
+os.environ["CRICKET_PITCH_BOX_MODEL"] = "off"

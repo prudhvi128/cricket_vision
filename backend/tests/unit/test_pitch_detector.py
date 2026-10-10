@@ -407,7 +407,11 @@ class TestDetectorClient(unittest.TestCase):
 
     def test_a_credential_alone_is_not_enough_without_the_sdk(self):
         """`available` must not raise just because the SDK is missing."""
-        det = RoboflowPitchDetector(PitchConfig(api_key=KEY))
+        # Opted back in on purpose: this test is about the SDK, not about the
+        # production gate (which keeps the abandoned remote path off).
+        det = RoboflowPitchDetector(
+            PitchConfig(api_key=KEY, remote_enabled=True)
+        )
         try:
             from inference_sdk import InferenceHTTPClient  # noqa: F401
         except Exception:

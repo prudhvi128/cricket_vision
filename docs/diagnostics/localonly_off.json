@@ -1,0 +1,48 @@
+{
+  "video": "real_cricket.mp4",
+  "analysis_id": "localonly_off",
+  "cricket_pitch_box_model": "off",
+  "pitch_box_config": {
+    "enabled": false,
+    "model": "off",
+    "model_path": null,
+    "model_found": false,
+    "conf": 0.25,
+    "inset": 0.08,
+    "every_n": 15,
+    "imgsz": 640
+  },
+  "roboflow_key_set": true,
+  "roboflow_requests": 0,
+  "roboflow_detection": {
+    "enabled": false,
+    "submitted": 0,
+    "detections": 0,
+    "failures": 0,
+    "last_error": null
+  },
+  "deliveries_tracking": 40,
+  "deliveries_result": 37,
+  "quarantined": 3,
+  "clips_written": 40,
+  "frames_decoded": 13565,
+  "wall_seconds": 574.0,
+  "timings_sec": {
+    "tracking": 510.673,
+    "shot": 16.737,
+    "overlay": 46.559,
+    "total": 573.971
+  },
+  "trajectory_points": 1058,
+  "detected_points": 538,
+  "tracking_fingerprint": "50142fdb4e9725975e6fa219f3f4ff3dc29836127da635d4a1d71fa31c6dabf0",
+  "pitch_box_detection": null,
+  "deliveries_with_box_estimate": 0,
+  "geometry_calibrated": 0,
+  "with_speed": 0,
+  "with_line": 0,
+  "with_length": 0,
+  "with_swing": 0,
+  "with_release_angle": 37,
+  "sample_frames": []
+}

@@ -394,9 +394,10 @@ class TrackingService:
         # network. Left alone, `_run` builds one from the environment.
         self._pitch_service = pitch_service
         # Injected so a test can drive the local pitch-BOX detector with a
-        # fixed box. Left alone, `_run` builds one only when
-        # CRICKET_PITCH_BOX_MODEL names a weights file — the feature is OFF
-        # by default, and an analysis without it pays nothing at all.
+        # fixed box. Left alone, `_run` builds one whenever
+        # CRICKET_PITCH_BOX_MODEL names a weights file — the shipped
+        # `backend/models/pitch_detect.pt` is the default — and only skips it
+        # when the environment says `off`.
         self._pitch_box_detector = pitch_box_detector
 
     # ── Public API ───────────────────────────────────────────────────────────
@@ -473,22 +474,27 @@ class TrackingService:
         )
         tracker = BallTracker()
 
-        # Optional pitch keypoint detection. One service for the whole pass, so
-        # the calibration history is continuous across deliveries. Without a
-        # ROBOFLOW_API_KEY this object is inert: `on_frame` returns on the first
-        # check and every snapshot honestly reports `no_calibration`.
+        # The ABANDONED remote pitch-keypoint service. One object for the whole
+        # pass, so its calibration history would be continuous across
+        # deliveries. It is inert unless the environment both supplies a
+        # ROBOFLOW_API_KEY and opts back in with CRICKET_ROBOFLOW_PITCH: with
+        # neither — the default — `on_frame` returns on the first check, no
+        # request is made, and every snapshot honestly reports
+        # `no_calibration`. The local pitch-BOX detector below is the pitch
+        # detection source.
         pitch = (
             self._pitch_service
             if self._pitch_service is not None
             else PitchService(width=width, height=height)
         )
 
-        # ── OPTIONAL local pitch-BOX detection ────────────────────────────────
+        # ── LOCAL pitch-BOX detection — the pitch detection source ───────────
         # A local YOLO model that answers with a BOX around the pitch, turned
-        # into four APPROXIMATE corners. OFF unless CRICKET_PITCH_BOX_MODEL
-        # names a weights file (or a detector was injected by a test). When OFF
-        # nothing below exists and the output is identical to a build that never
-        # had this feature. When ON the inference still never runs on this
+        # into four APPROXIMATE corners. ON whenever CRICKET_PITCH_BOX_MODEL
+        # names a weights file (the shipped backend/models/pitch_detect.pt is
+        # the default) or a detector was injected by a test; `off` turns it
+        # off, and then nothing below exists and the output is identical to a
+        # build that never had this feature. The inference never runs on this
         # thread: `PitchBoxSlot` drains a one-deep, latest-wins queue.
         box_cfg = PITCH_BOX_CONFIG
         box_detector = self._pitch_box_detector
@@ -1023,12 +1029,12 @@ class TrackingService:
             t_ring = time.perf_counter()
             result.time_stage("ring_encode", t_ring - t_decode)
 
-            # 2b. Optional pitch keypoint detection. Offered on EVERY frame and
-            #     dropped by the service to one submission per interval; the put
-            #     is non-blocking and nothing below ever waits for a response.
-            #     The model runs on a worker thread, so this costs a pointer
-            #     copy at most — and a single boolean check when no API key is
-            #     configured, which is the default.
+            # 2b. The ABANDONED remote pitch-keypoint service. Offered on EVERY
+            #     frame and dropped by the service to one submission per
+            #     interval; the put is non-blocking and nothing below ever
+            #     waits for a response. The model runs on a worker thread, so
+            #     this costs a pointer copy at most — and a single boolean
+            #     check when the path is not opted into, which is the default.
             #
             #     The hints are the loop's OWN per-frame signals, already
             #     computed above: the corridor's brightness (is there a pitch to
@@ -1053,9 +1059,9 @@ class TrackingService:
                 black=is_black,
             )
 
-            # 2c. Optional LOCAL pitch-BOX detection. Offered on every Nth
-            #     frame; the inference itself runs on a worker thread, so this
-            #     is one integer modulo per frame and nothing else. OFF means
+            # 2c. LOCAL pitch-BOX detection. Offered on every Nth frame; the
+            #     inference itself runs on a worker thread, so this is one
+            #     integer modulo per frame and nothing else. OFF means
             #     `box_slot` is None and this is one attribute check.
             if box_slot is not None:
                 box_slot.offer(frame_number, frame)

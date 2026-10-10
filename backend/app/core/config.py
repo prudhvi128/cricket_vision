@@ -29,9 +29,11 @@ from .constants import (
     MIN_FRAMES_BETWEEN_DELIVERIES,
     PITCH_ATTEMPTS_PER_SEC_FLOOR,
     PITCH_BOX_CONF_DEFAULT,
+    PITCH_BOX_DEFAULT_WEIGHTS,
     PITCH_BOX_EVERY_N_DEFAULT,
     PITCH_BOX_IMGSZ_DEFAULT,
     PITCH_BOX_INSET_DEFAULT,
+    PITCH_BOX_OFF_TOKENS,
     PITCH_DETECTION_INTERVAL_FRAMES,
     PITCH_HOMOGRAPHY_MIN_KPS,
     PITCH_MAX_ATTEMPTS_PER_SEC,
@@ -143,6 +145,14 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    """`1/true/yes/on` (any case) are True; `0/false/no/off` are False."""
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _env_path(name: str, default: Path) -> Path:
     """
     Resolve a directory from the environment, falling back to the repo default.
@@ -215,18 +225,24 @@ def resolve_shot_model_path(models_dir: Path | None = None) -> Path:
 @dataclass(frozen=True)
 class PitchConfig:
     """
-    Settings for the optional Roboflow pitch-keypoint detector.
+    Settings for the OPTIONAL Roboflow pitch-keypoint detector.
 
     Environment-resolved ONCE at import (via `_load_dotenv` above), exactly like
     the rest of this module. Frozen, so a test can `dataclasses.replace` one
     field without inventing a new configuration object.
 
-    `enabled` is deliberately just "is there an API key". Everything else —
-    model id, interval, thresholds — is inert until a credential exists, so a
-    checkout with no `.env` behaves as if the feature were never installed.
+    The Roboflow path is ABANDONED: the local pitch-box detector
+    (`app/pitch/local_box_detector.py`) is the pitch detection source. `enabled`
+    is therefore an EXPLICIT opt-in (`CRICKET_ROBOFLOW_PITCH`) on top of a
+    credential, so a key left in `.env` can never make the pipeline call a
+    remote endpoint again. A checkout with no `.env` behaves as if the feature
+    were never installed, and so does one that has a key but never opted in.
     """
 
     api_key: str = ""
+    # Explicit opt-in for the abandoned remote path. False unless the
+    # environment says otherwise, whatever credentials happen to be present.
+    remote_enabled: bool = False
     api_url: str = ROBOFLOW_API_URL_DEFAULT
     model_id: str = PITCH_MODEL_ID_DEFAULT
     # Submit one frame every N frames of the source video.
@@ -278,8 +294,8 @@ class PitchConfig:
 
     @property
     def enabled(self) -> bool:
-        """True only when a credential and a model id are both present."""
-        return bool(self.api_key) and bool(self.model_id)
+        """True only for an explicit opt-in AND a credential."""
+        return bool(self.remote_enabled) and bool(self.api_key) and bool(self.model_id)
 
     def metadata(self) -> dict:
         """
@@ -288,6 +304,7 @@ class PitchConfig:
         """
         return {
             "enabled": self.enabled,
+            "remote_enabled": self.remote_enabled,
             "model_id": self.model_id,
             "api_url": self.api_url,
             "interval_frames": max(1, self.interval_frames),
@@ -307,6 +324,9 @@ class PitchConfig:
 
 PITCH_CONFIG = PitchConfig(
     api_key=_env_str("ROBOFLOW_API_KEY", ""),
+    # The remote path is abandoned: off unless the environment explicitly asks
+    # for it, so a credential in `.env` can never cause a request on its own.
+    remote_enabled=_env_bool("CRICKET_ROBOFLOW_PITCH", False),
     api_url=_env_str("ROBOFLOW_API_URL", ROBOFLOW_API_URL_DEFAULT).rstrip("/"),
     model_id=_env_str("ROBOFLOW_MODEL_ID", PITCH_MODEL_ID_DEFAULT),
     interval_frames=max(1, _env_int(
@@ -341,19 +361,22 @@ PITCH_CONFIG = PitchConfig(
 @dataclass(frozen=True)
 class PitchBoxConfig:
     """
-    Settings for the OPTIONAL local pitch-box detector (app/pitch).
+    Settings for the local pitch-box detector (app/pitch) — the pitch detection
+    source.
 
     Environment-resolved ONCE at import, exactly like PitchConfig above.
-    `model` is the whole switch: an empty `CRICKET_PITCH_BOX_MODEL` means the
-    feature is OFF and no code path downstream of it runs, so a checkout with
-    no configuration behaves exactly as if this feature were never installed.
+    `model` is the whole switch: it names the weights file, and the SHIPPED
+    weights are the default, so a checkout with a `backend/models/pitch_detect.pt`
+    runs the detector with no configuration at all. One of
+    `PITCH_BOX_OFF_TOKENS` ("off", "none", "disabled", "0", "false") turns it
+    off, which is what the test suite uses to keep the feature inert under test.
 
     `model` may be a bare filename ("pitch_detect.pt") — resolved against
     `MODELS_DIR` — or an absolute path. The weights are used in place: never
     copied, never renamed, never downloaded.
     """
 
-    model: str = ""
+    model: str = PITCH_BOX_DEFAULT_WEIGHTS
     conf: float = PITCH_BOX_CONF_DEFAULT
     inset: float = PITCH_BOX_INSET_DEFAULT
     every_n: int = PITCH_BOX_EVERY_N_DEFAULT
@@ -361,13 +384,14 @@ class PitchBoxConfig:
 
     @property
     def enabled(self) -> bool:
-        """True only when a weights file was named."""
-        return bool(self.model)
+        """True unless the environment named no weights or asked for `off`."""
+        token = str(self.model).strip().lower()
+        return bool(token) and token not in PITCH_BOX_OFF_TOKENS
 
     @property
     def model_path(self) -> Optional[Path]:
         """Resolved weights path, or None when the feature is OFF."""
-        if not self.model:
+        if not self.enabled:
             return None
         raw = Path(self.model).expanduser()
         return raw if raw.is_absolute() else (MODELS_DIR / raw)
@@ -388,7 +412,7 @@ class PitchBoxConfig:
 
 
 PITCH_BOX_CONFIG = PitchBoxConfig(
-    model=_env_str("CRICKET_PITCH_BOX_MODEL", ""),
+    model=_env_str("CRICKET_PITCH_BOX_MODEL", PITCH_BOX_DEFAULT_WEIGHTS),
     conf=_env_float("CRICKET_PITCH_BOX_CONF", PITCH_BOX_CONF_DEFAULT),
     inset=_env_float("CRICKET_PITCH_BOX_INSET", PITCH_BOX_INSET_DEFAULT),
     every_n=max(1, _env_int("CRICKET_PITCH_BOX_EVERY_N", PITCH_BOX_EVERY_N_DEFAULT)),

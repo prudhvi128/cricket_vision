@@ -1,13 +1,13 @@
 """
-local_box_detector.py — OPTIONAL local pitch-box detector (ultralytics YOLO).
+local_box_detector.py — the local pitch-box detector (ultralytics YOLO).
 
-Strictly auxiliary, and OFF unless `CRICKET_PITCH_BOX_MODEL` is set (see
-core/config.py -> PitchBoxConfig). It answers one question the Roboflow
-keypoint model does not: "is there a pitch-shaped region in this frame, as a
-BOX?". The box is then turned into four APPROXIMATE corners by
-`pitch/box_corners.py`. Those corners are GUESSES, not measurements: they never
-become `pitch.corners`, never feed a homography, and can never make an analysis
-`geometry_calibrated`.
+The pitch detection source: ON by default, from the weights shipped in
+`backend/models/` (see core/config.py -> PitchBoxConfig). It answers one
+question: "is there a pitch-shaped region in this frame, as a BOX?". The box is
+then turned into four APPROXIMATE corners by `pitch/box_corners.py`. Those
+corners are GUESSES, not measurements: they never become `pitch.corners`, never
+feed a homography, and can never make an analysis `geometry_calibrated`.
+Nothing here calls a remote API or reads a credential.
 
 THREE RULES THIS MODULE OBEYS
 -----------------------------
@@ -40,6 +40,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
+from ..core.constants import PITCH_BOX_OFF_TOKENS
 from .box_corners import box_to_corners, corners_as_dict, corners_valid
 
 log = logging.getLogger(__name__)
@@ -340,14 +341,21 @@ class PitchBoxSlot:
 
 
 def pitch_box_enabled(cfg) -> bool:
-    """Is the feature configured ON (a model was named)?"""
-    return bool(getattr(cfg, "model", ""))
+    """Is the feature configured ON (weights named, and not one of `off`)?"""
+    enabled = getattr(cfg, "enabled", None)
+    if enabled is not None:
+        return bool(enabled)
+    token = str(getattr(cfg, "model", "")).strip().lower()
+    return bool(token) and token not in PITCH_BOX_OFF_TOKENS
 
 
 def describe_pitch_box(cfg) -> str:
     """The startup line: ON/OFF, and when ON the resolved path and its size."""
     if not pitch_box_enabled(cfg):
-        return "pitch box detector: OFF (CRICKET_PITCH_BOX_MODEL not set)"
+        return (
+            "pitch box detector: OFF "
+            f"(CRICKET_PITCH_BOX_MODEL={getattr(cfg, 'model', '')!r})"
+        )
     path = cfg.model_path
     if path is None:
         return f"pitch box detector: ON but unresolved (CRICKET_PITCH_BOX_MODEL={cfg.model!r})"
