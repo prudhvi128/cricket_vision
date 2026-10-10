@@ -28,6 +28,10 @@ from .constants import (
     MIN_DELIVERY_FRAMES,
     MIN_FRAMES_BETWEEN_DELIVERIES,
     PITCH_ATTEMPTS_PER_SEC_FLOOR,
+    PITCH_BOX_CONF_DEFAULT,
+    PITCH_BOX_EVERY_N_DEFAULT,
+    PITCH_BOX_IMGSZ_DEFAULT,
+    PITCH_BOX_INSET_DEFAULT,
     PITCH_DETECTION_INTERVAL_FRAMES,
     PITCH_HOMOGRAPHY_MIN_KPS,
     PITCH_MAX_ATTEMPTS_PER_SEC,
@@ -331,6 +335,64 @@ PITCH_CONFIG = PitchConfig(
         0.5, _env_float("PITCH_REQUEST_TIMEOUT_SECONDS", PITCH_REQUEST_TIMEOUT_SECONDS)
     ),
     max_input_size=max(64, _env_int("PITCH_MAX_INPUT_SIZE", PITCH_MAX_INPUT_SIZE)),
+)
+
+
+@dataclass(frozen=True)
+class PitchBoxConfig:
+    """
+    Settings for the OPTIONAL local pitch-box detector (app/pitch).
+
+    Environment-resolved ONCE at import, exactly like PitchConfig above.
+    `model` is the whole switch: an empty `CRICKET_PITCH_BOX_MODEL` means the
+    feature is OFF and no code path downstream of it runs, so a checkout with
+    no configuration behaves exactly as if this feature were never installed.
+
+    `model` may be a bare filename ("pitch_detect.pt") — resolved against
+    `MODELS_DIR` — or an absolute path. The weights are used in place: never
+    copied, never renamed, never downloaded.
+    """
+
+    model: str = ""
+    conf: float = PITCH_BOX_CONF_DEFAULT
+    inset: float = PITCH_BOX_INSET_DEFAULT
+    every_n: int = PITCH_BOX_EVERY_N_DEFAULT
+    imgsz: int = PITCH_BOX_IMGSZ_DEFAULT
+
+    @property
+    def enabled(self) -> bool:
+        """True only when a weights file was named."""
+        return bool(self.model)
+
+    @property
+    def model_path(self) -> Optional[Path]:
+        """Resolved weights path, or None when the feature is OFF."""
+        if not self.model:
+            return None
+        raw = Path(self.model).expanduser()
+        return raw if raw.is_absolute() else (MODELS_DIR / raw)
+
+    def metadata(self) -> dict:
+        """Reproducibility record: configuration only, never a credential."""
+        path = self.model_path
+        return {
+            "enabled": self.enabled,
+            "model": self.model,
+            "model_path": str(path) if path is not None else None,
+            "model_found": bool(path is not None and path.is_file()),
+            "conf": self.conf,
+            "inset": self.inset,
+            "every_n": max(1, self.every_n),
+            "imgsz": self.imgsz,
+        }
+
+
+PITCH_BOX_CONFIG = PitchBoxConfig(
+    model=_env_str("CRICKET_PITCH_BOX_MODEL", ""),
+    conf=_env_float("CRICKET_PITCH_BOX_CONF", PITCH_BOX_CONF_DEFAULT),
+    inset=_env_float("CRICKET_PITCH_BOX_INSET", PITCH_BOX_INSET_DEFAULT),
+    every_n=max(1, _env_int("CRICKET_PITCH_BOX_EVERY_N", PITCH_BOX_EVERY_N_DEFAULT)),
+    imgsz=max(64, _env_int("CRICKET_PITCH_BOX_IMGSZ", PITCH_BOX_IMGSZ_DEFAULT)),
 )
 
 
@@ -761,9 +823,11 @@ __all__ = [
     "DATA_DIR",
     "MANIFESTS_DIR",
     "MODELS_DIR",
+    "PITCH_BOX_CONFIG",
     "PITCH_CONFIG",
     "PipelineConfig",
     "Paths",
+    "PitchBoxConfig",
     "PitchConfig",
     "PROJECT_DIR",
     "ResolvedSegmentation",

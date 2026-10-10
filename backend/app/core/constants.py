@@ -614,6 +614,23 @@ PITCH_DROUGHT_INTERVAL_MULTIPLIER_IN_EVENT = 4  # inside a delivery: still worth
 # timeouts put it back to sleep for another window.
 PITCH_DETECTOR_REARM_FRAMES = 600
 
+# ═══════════════════════════════════════════════════════════════════════════
+# OPTIONAL LOCAL PITCH-BOX DETECTION (ultralytics, local weights)
+# ═══════════════════════════════════════════════════════════════════════════
+# A second, independent and entirely optional pitch detector: a local YOLO
+# model that answers with a BOX around the pitch rather than with keypoints.
+# The box becomes four APPROXIMATE corners (app/pitch/box_corners.py). Those
+# are guesses and are recorded as such: they never become `pitch.corners`,
+# never produce a homography, and can never make an analysis `geometry_calibrated`.
+#
+# The feature is OFF unless `CRICKET_PITCH_BOX_MODEL` names the weights file
+# (a bare filename resolves against backend/models/; the file is never copied
+# or renamed). Every value below is inert until then.
+PITCH_BOX_CONF_DEFAULT = 0.25
+PITCH_BOX_INSET_DEFAULT = 0.08
+PITCH_BOX_EVERY_N_DEFAULT = 15
+PITCH_BOX_IMGSZ_DEFAULT = 640
+
 # The pitch is a bright, washed-out surface. Measured over the pitch corridor
 # of `real_cricket.mp4`: frames where the model answered had a median corridor
 # luminance of 126, frames where it answered with nothing had 113 — and every
