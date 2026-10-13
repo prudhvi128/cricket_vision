@@ -42,6 +42,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Optional
 
 from ..core.config import PitchConfig
+from ..core.constants import PITCH_DETECTION_SOURCE_KEYPOINTS
 
 log = logging.getLogger(__name__)
 
@@ -82,12 +83,19 @@ class PitchDetection:
     `confidence` is the mean over the keypoints that carried a confidence; it is
     None only when the response carried no confidences at all, which is itself
     information (the caller then treats it as "unknown", not as "high").
+
+    `source` names HOW these keypoints were produced — `pitch_keypoints` for a
+    keypoint model, `pitch_segmentation` for a mask-derived quad — and is what
+    `analytics/pitch_geometry.py` reads before letting a calibration become
+    metric geometry. A default of `pitch_keypoints` keeps the (abandoned)
+    Roboflow path and every test double behaving exactly as before.
     """
 
     keypoints: list[Keypoint]
     frame_number: int
     image_size: Size
     confidence: Optional[float] = None
+    source: str = PITCH_DETECTION_SOURCE_KEYPOINTS
 
     @property
     def named(self) -> dict[str, tuple[float, float]]:

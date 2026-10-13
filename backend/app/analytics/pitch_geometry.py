@@ -17,9 +17,22 @@ with the batter at the opposite end of them.
 THREE ASSUMPTIONS, ALL STATED
 -----------------------------
 1. The quad's LONG axis runs along the pitch and its SHORT axis across it. This
-   is checked, not assumed: the ball must travel further along the chosen axis
-   than across it (it cannot cover 20 m sideways), and the quad itself must be
-   elongated the same way. A roughly square quad is refused, never guessed.
+   is checked, not assumed, and the check ships as three separate refusals:
+     * CROP — a quad whose bottom edge sits in the broadcast scorecard band has
+       run out of VISIBLE pitch: the model cannot segment through the overlay,
+       so that quad is only part of the wicket-to-wicket rectangle. It is
+       refused with its own reason, never stretched to 20.12 m.
+     * ELONGATION — measured by min-area-rect aspect (`pitch/
+       mask_geometry.quad_aspect_ratio`), rotation-invariantly, because the
+       axis-aligned span check this replaces refused every quad the moment the
+       camera tilted: the same rectangle rotated 30° halves its axis-aligned
+       ratio while its true shape is unchanged.
+     * DIRECTION — the ball's image-space travel must lie within
+       PITCH_GEOMETRY_TRAVEL_AXIS_MAX_DEG of that long axis, so a wide
+       side-on quad cannot claim a vertically travelling ball however the
+       homography stretches the unit square.
+   A roughly square quad, or one that disagrees with the ball's travel, is
+   refused — never guessed.
 2. The long axis is scaled to PITCH_LENGTH_M (20.12 m, Law 6) and the short axis
    to CREASE_WIDTH_M (2.64 m, the return creases). The detected quad is treated
    as that rectangle, and its edge nearest the batter is treated as the batting
@@ -40,6 +53,7 @@ Everything here fails closed: `(None, reason)`, never a plausible number.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
@@ -48,17 +62,30 @@ import numpy as np
 from ..core.constants import (
     CREASE_WIDTH_M,
     PITCH_GEOMETRY_ASPECT_MIN_RATIO,
+    PITCH_GEOMETRY_CROP_BAND_FRACTION,
+    PITCH_GEOMETRY_CROPPED_REASON,
     PITCH_GEOMETRY_MIN_TRAVEL_POINTS,
+    PITCH_GEOMETRY_NON_METRIC_SOURCE,
+    PITCH_GEOMETRY_TRAVEL_AXIS_MAX_DEG,
     PITCH_GEOMETRY_TRAVEL_MIN_DELTA,
+    PITCH_DETECTION_SOURCE_KEYPOINTS,
+    PITCH_DETECTION_SOURCE_SEGMENTATION,
     PITCH_LENGTH_M,
 )
 from ..pitch.calibration import PitchCalibration
+from ..pitch.mask_geometry import quad_aspect_ratio
 
 # Which unit-square axis a geometry reads along.
 AXIS_U = "u"
 AXIS_V = "v"
 
-SOURCE_PITCH_KEYPOINTS = "pitch_keypoints"
+SOURCE_PITCH_KEYPOINTS = PITCH_DETECTION_SOURCE_KEYPOINTS
+SOURCE_PITCH_SEGMENTATION = PITCH_DETECTION_SOURCE_SEGMENTATION
+
+# Recorded as the rejection reason when a calibration's source is not allowed
+# to become metric geometry. One constant, in core/constants.py, so the
+# analysis record and the run report use the same words for the same refusal.
+NON_METRIC_SOURCE_REASON = PITCH_GEOMETRY_NON_METRIC_SOURCE
 
 
 @dataclass(frozen=True)
@@ -111,6 +138,89 @@ def flight_to_bounce(
     return list(points[: low + 1])
 
 
+# The corner order the geometry checks read the quad in: top-left → top-right
+# → bottom-right → bottom-left, the same order pitch/calibration.py names them.
+_CORNER_ORDER = ("top_left", "top_right", "bottom_right", "bottom_left")
+
+
+def _quad_points(
+    calibration: PitchCalibration,
+) -> Optional[list[tuple[float, float]]]:
+    """The quad's four corners in reading order, or None when a name is missing."""
+    corners = calibration.corners
+    if any(name not in corners for name in _CORNER_ORDER):
+        return None
+    return [
+        (float(corners[name][0]), float(corners[name][1]))
+        for name in _CORNER_ORDER
+    ]
+
+
+def _quad_long_axis(
+    quad: Sequence[tuple[float, float]],
+) -> Optional[tuple[float, float]]:
+    """
+    Unit vector along the quad's LONGER edge pair, or None when degenerate.
+
+    The two edge pairs are averaged (top+bottom, right+left) so a trapezoid's
+    perspective does not tilt the answer to one of its four edges: the axis of
+    a trapezoid seen end-on is the mean of its foreshortened and stretched
+    sides, which for a symmetric trapezoid is exactly the vertical.
+    """
+    (x0, y0), (x1, y1), (x2, y2), (x3, y3) = quad
+    # across = top edge + bottom edge, both pointing the same way (left→right).
+    across = ((x1 - x0) + (x2 - x3), (y1 - y0) + (y2 - y3))
+    across_len = (math.dist((x0, y0), (x1, y1)) + math.dist((x3, y3), (x2, y2))) / 2.0
+    # along = right edge + left edge, both pointing the same way (top→bottom).
+    along = ((x2 - x1) + (x3 - x0), (y2 - y1) + (y3 - y0))
+    along_len = (math.dist((x1, y1), (x2, y2)) + math.dist((x0, y0), (x3, y3))) / 2.0
+    vec = across if across_len >= along_len else along
+    norm = math.hypot(vec[0], vec[1])
+    if norm <= 1e-9:
+        return None
+    return (vec[0] / norm, vec[1] / norm)
+
+
+def _travel_direction(
+    points: Sequence[tuple[float, float]],
+) -> Optional[tuple[float, float]]:
+    """
+    Unit vector of the ball's image-space travel, release end → bounce end.
+
+    First-third to last-third centroids, the same robust pairing the
+    unit-square axis vote uses, so one noisy detection at either end cannot
+    swing the angle. None when the detections do not move at all — though the
+    axis vote upstream has already refused that trajectory.
+    """
+    if len(points) < 2:
+        return None
+    k = max(1, len(points) // 3)
+    first = points[:k]
+    last = points[-k:]
+    fx = sum(float(p[0]) for p in first) / len(first)
+    fy = sum(float(p[1]) for p in first) / len(first)
+    lx = sum(float(p[0]) for p in last) / len(last)
+    ly = sum(float(p[1]) for p in last) / len(last)
+    dx, dy = lx - fx, ly - fy
+    norm = math.hypot(dx, dy)
+    if norm <= 1e-9:
+        return None
+    return (dx / norm, dy / norm)
+
+
+def _axis_divergence_deg(
+    a: tuple[float, float], b: tuple[float, float]
+) -> float:
+    """Acute angle between two UNDIRECTED axes, in degrees (0..90).
+
+    Undirected because an axis has no head: the quad's long axis points
+    "either way along the pitch" and the ball's travel likewise; only their
+    agreement in direction matters, not which end is which.
+    """
+    dot = abs(a[0] * b[0] + a[1] * b[1])
+    return math.degrees(math.acos(min(1.0, dot)))
+
+
 def build_pitch_geometry(
     calibration: Optional[PitchCalibration],
     flight_points: Sequence[tuple[float, float]],
@@ -128,7 +238,21 @@ def build_pitch_geometry(
     """
     if calibration is None:
         return None, "no_pitch_calibration"
-    if calibration.homography is None or len(calibration.corners) < 4:
+    # ── The metric gate ──────────────────────────────────────────────────────
+    # Two measured sources may become metres: the keypoint quad and the
+    # segmentation quad. Both are refused the moment their GEOMETRY fails the
+    # checks below — a quad that is near-square, that disagrees with the
+    # ball's travel, that maps a corner outside the pitch, or whose homography
+    # is degenerate yields no number at all, never a plausible one. An UNKNOWN
+    # source (one this project does not measure) is refused outright, before
+    # any number is computed, because its axis convention cannot be audited.
+    # The reason is recorded per delivery, so "why is there no length" is
+    # answerable from the artefact.
+    source = getattr(calibration, "source", SOURCE_PITCH_KEYPOINTS)
+    if source not in (SOURCE_PITCH_KEYPOINTS, SOURCE_PITCH_SEGMENTATION):
+        return None, NON_METRIC_SOURCE_REASON
+    quad = _quad_points(calibration)
+    if calibration.homography is None or quad is None:
         return None, "pitch_quad_unavailable"
     if len(flight_points) < PITCH_GEOMETRY_MIN_TRAVEL_POINTS:
         return None, "too_few_detected_points"
@@ -142,13 +266,40 @@ def build_pitch_geometry(
     if len(uv) < PITCH_GEOMETRY_MIN_TRAVEL_POINTS:
         return None, "too_few_points_mapped_into_pitch"
 
+    # ── The quad itself must be a whole, elongated pitch rectangle ──────────
+    # Three checks on the QUAD, each of which can refuse on its own fact. They
+    # run before the ball's axis vote below: a cropped or square quad is wrong
+    # no matter which way the ball travelled, and "cropped by the overlay" is a
+    # more useful thing to record about a delivery than "the travel was even".
+
+    # 1. CROP: a quad whose bottom edge sits in the broadcast scorecard band
+    #    has run out of VISIBLE pitch — the model cannot segment through the
+    #    overlay, so that quad is only part of the wicket-to-wicket rectangle
+    #    and must never be stretched to 20.12 m. Its own reason, never the
+    #    aspect-mismatch one below: "cropped" and "square" are different facts
+    #    and a client explaining a missing length should say which happened.
+    _frame_w, frame_h = calibration.image_size
+    crop_band = PITCH_GEOMETRY_CROP_BAND_FRACTION * frame_h
+    bottom_edge_y = max(y for _x, y in quad)
+    if frame_h - bottom_edge_y <= crop_band:
+        return None, PITCH_GEOMETRY_CROPPED_REASON
+
+    # 2. ELONGATION, rotation-invariantly: the min-area-rect aspect of the
+    #    quad must reach the same ratio the axis vote below trusts of the
+    #    BALL. The check this replaced compared the quad's axis-ALIGNED spans,
+    #    which punished every rotated or strongly perspective quad — on the
+    #    Oct-11 footage that refused all 37 calibrations outright. A quad that
+    #    is roughly square cannot say which axis is which, so it still goes.
+    ratio = PITCH_GEOMETRY_ASPECT_MIN_RATIO
+    if quad_aspect_ratio(quad) < ratio:
+        return None, "pitch_quad_aspect_disagrees_with_travel"
+
     us = [p[0] for p in uv]
     vs = [p[1] for p in uv]
     du = max(us) - min(us)
     dv = max(vs) - min(vs)
 
     # ── Which axis is along the pitch ────────────────────────────────────────
-    ratio = PITCH_GEOMETRY_ASPECT_MIN_RATIO
     if dv >= du * ratio:
         axis = AXIS_V
     elif du >= dv * ratio:
@@ -158,11 +309,19 @@ def build_pitch_geometry(
         # cannot say which direction is down the pitch, so no axis, no metres.
         return None, "ball_travel_axis_ambiguous"
 
-    # The quad must be elongated the same way. `PitchCalibration.width` is the
-    # horizontal span of the quad, `.length` the vertical one.
-    quad_along = float(calibration.length) if axis == AXIS_V else float(calibration.width)
-    quad_across = float(calibration.width) if axis == AXIS_V else float(calibration.length)
-    if quad_across <= 0.0 or quad_along < quad_across * ratio:
+    # 3. DIRECTION: the ball's image-space travel must lie within
+    #    PITCH_GEOMETRY_TRAVEL_AXIS_MAX_DEG of the quad's own long axis. The
+    #    unit-square vote above picks the axis INSIDE the quad; this says the
+    #    quad is elongated the same way IN THE IMAGE, so a wide side-on quad
+    #    cannot claim a vertically travelling ball however the homography
+    #    stretches the unit square.
+    quad_axis = _quad_long_axis(quad)
+    if quad_axis is None:
+        return None, "pitch_quad_unavailable"
+    travel_axis = _travel_direction(flight_points)
+    if travel_axis is None:
+        return None, "pitch_orientation_ambiguous"
+    if _axis_divergence_deg(quad_axis, travel_axis) > PITCH_GEOMETRY_TRAVEL_AXIS_MAX_DEG:
         return None, "pitch_quad_aspect_disagrees_with_travel"
 
     # ── Which end is the batter's ────────────────────────────────────────────
@@ -223,6 +382,7 @@ def build_pitch_geometry(
             batting_end=batting_end,
             travel_delta=float(delta),
             calibration_frame=int(calibration.frame_number),
+            source=source,
         ),
         "",
     )

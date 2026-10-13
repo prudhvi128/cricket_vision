@@ -47,6 +47,7 @@ from .renderer import (
     draw_release_marker,
     draw_trajectory_trail,
 )
+from .video_io import open_video_writer
 
 log = logging.getLogger(__name__)
 
@@ -174,22 +175,15 @@ class OverlayRenderer:
         """Same isOpened()-checked fallback chain as ClipWriter."""
         out_path.parent.mkdir(parents=True, exist_ok=True)
         safe_fps = float(fps) if fps and fps > 0 else 25.0
-        errors = []
-        for codec in self.codec_preference:
-            try:
-                candidate = cv2.VideoWriter(
-                    str(out_path), cv2.VideoWriter_fourcc(*codec), safe_fps, size
-                )
-            except Exception as exc:
-                errors.append(f"{codec}: {exc}")
-                continue
-            if candidate is not None and candidate.isOpened():
-                return candidate
-            if candidate is not None:
-                candidate.release()
-            errors.append(f"{codec}: isOpened() False")
-        log.error("Overlay writer could not open %s (%s)", out_path.name, "; ".join(errors))
-        return None
+        writer, _label, errors = open_video_writer(
+            out_path, safe_fps, size, self.codec_preference
+        )
+        if writer is None:
+            log.error(
+                "Overlay writer could not open %s (%s)",
+                out_path.name, "; ".join(errors),
+            )
+        return writer
 
     def _draw_pass(
         self,

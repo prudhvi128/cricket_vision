@@ -152,6 +152,13 @@ describe("adaptDelivery maps, never invents", () => {
     expect(flat.speed).toBe(102.1);
     expect(flat.length).toBe("Good Length");
     expect(flat.line).toBe("Middle");
-    expect(flat.ball).toBe(7);
+  });
+
+  it("uses the backend's stable delivery id, not the array position", () => {
+    // Quarantined deliveries are omitted from the served array, so the id and
+    // the index diverge. Labelling by index would silently renumber every ball
+    // after a quarantine and no longer match result.json.
+    const flat = adaptDelivery(delivery({ id: 4 }), 1);
+    expect(flat.ball).toBe(4);
   });
 });

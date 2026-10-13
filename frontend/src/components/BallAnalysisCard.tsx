@@ -12,6 +12,14 @@ export interface BallData {
   shot_confidence?: number;
   release_angle?: number;
   bounce_angle?: number;
+  /**
+   * True when the metric geometry gate accepted this delivery. Absent means
+   * the card cannot promise calibrated metrics — the backend's per-delivery
+   * gate decided, and `geometry_reason` names why when it refused.
+   */
+  calibrated?: boolean;
+  /** The gate's recorded refusal reason, when it refused. */
+  geometry_reason?: string;
   [key: string]: unknown;
 }
 
@@ -106,6 +114,22 @@ const BallAnalysisCard = ({ data }: { data: BallData }) => {
               <span className="text-xs font-semibold ml-auto">{value}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* The geometry gate refused this delivery: say so, by the reason the
+          backend recorded, instead of leaving unexplained dashes. The metric
+          cards above stay honest — they show what the run measured, which for
+          a refused quad is nothing for the calibration-dependent fields. */}
+      {!data.calibrated && data.geometry_reason && (
+        <div
+          className="px-4 pb-4 -mt-1"
+          data-testid="calibration-unavailable"
+        >
+          <p className="text-[10px] leading-snug text-amber-500/90">
+            Calibrated metrics unavailable —{" "}
+            {String(data.geometry_reason).replace(/_/g, " ")}
+          </p>
         </div>
       )}
     </div>

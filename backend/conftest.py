@@ -61,3 +61,12 @@ os.environ["ROBOFLOW_API_KEY"] = ""
 # that want the feature inject their own detector with their own box
 # (tests/integration/test_pitch_box_feature.py).
 os.environ["CRICKET_PITCH_BOX_MODEL"] = "off"
+
+# Keep the local pitch-SEGMENTATION detector OFF under test.
+#
+# Same reasoning as the box detector above, doubled for the mask model: a
+# 20 MB YOLO11s-seg must not load or infer in every tracking test. `off` is
+# the documented spelling (see PitchSegConfig), and the tests that want the
+# feature inject their own detector with their own masks
+# (tests/integration/test_pitch_seg_feature.py).
+os.environ["CRICKET_PITCH_SEG_MODEL"] = "off"

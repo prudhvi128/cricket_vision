@@ -216,6 +216,8 @@ PITCH_KEYS = {
     "center",
     "homography_available",
     "orientation",
+    "source",
+    "geometry_reason",
 }
 
 
@@ -521,6 +523,51 @@ class TestEnvelopeOrdering(unittest.TestCase):
         self.assertEqual(envelope.deliveries, [])
         self.assertEqual(envelope.analysis_id, "x")
         self.assertEqual(envelope.pitch.state, "no_calibration")
+
+
+class TestPitchProvenance(unittest.TestCase):
+    """`pitch.source` and `pitch.geometry_reason` are the provenance and the
+    recorded refusal fact. Both cross the wire when present, stay null when
+    absent, and never leak the internal block's other keys."""
+
+    def _pitch_body(self, pitch: dict) -> dict:
+        body = serialize_delivery(
+            internal_delivery(pitch=pitch), analysis_id=ANALYSIS_ID
+        ).model_dump()
+        return body["pitch"]
+
+    def test_source_and_geometry_reason_surface_when_present(self):
+        body = self._pitch_body({
+            "state": "calibrated",
+            "detected": True,
+            "calibrated": True,
+            "source": "pitch_segmentation",
+            "geometry_reason": "pitch_cropped_by_overlay",
+        })
+        self.assertEqual(body["source"], "pitch_segmentation")
+        self.assertEqual(body["geometry_reason"], "pitch_cropped_by_overlay")
+
+    def test_both_stay_null_when_the_block_has_neither(self):
+        body = self._pitch_body({"state": "no_calibration"})
+        self.assertIsNone(body["source"])
+        self.assertIsNone(body["geometry_reason"])
+
+    def test_an_empty_string_is_treated_as_absent(self):
+        body = self._pitch_body({"source": "", "geometry_reason": ""})
+        self.assertIsNone(body["source"])
+        self.assertIsNone(body["geometry_reason"])
+
+    def test_internal_still_never_leaks(self):
+        body = self._pitch_body({
+            "model_id": "pitch_seg:v1",
+            "image_size": [1280, 720],
+            "frame_number": 42,
+            "source": "pitch_segmentation",
+        })
+        self.assertEqual(body["source"], "pitch_segmentation")
+        self.assertNotIn("model_id", body)
+        self.assertNotIn("image_size", body)
+        self.assertNotIn("frame_number", body)
 
 
 if __name__ == "__main__":

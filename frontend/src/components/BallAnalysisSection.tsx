@@ -54,6 +54,10 @@ const BallAnalysisSection = ({ fetcher, deliveries: deliveriesProp }: Props) => 
             shot_confidence: d.shot_confidence,
             release_angle: d.release_angle,
             bounce_angle:  d.bounce_angle,
+            // Calibration verdict + the gate's recorded refusal, so the card
+            // can explain missing metrics with the backend's own fact.
+            calibrated:    d.calibrated,
+            geometry_reason: d.geometry_reason,
           }));
         } else if (fetcher) {
           data = await fetcher();

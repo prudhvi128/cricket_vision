@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Upload, Download, TrendingUp, Loader2, AlertCircle } from "lucide-react";
+import {
+  Upload, Download, TrendingUp, Loader2, AlertCircle,
+  ChevronLeft, ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import BallAnalysisSection from "@/components/BallAnalysisSection";
 import SummaryStats from "@/components/SummaryStats";
 import PitchMap from "@/components/PitchMap";
 import PitchOverlay from "@/components/PitchOverlay";
+import TrajectoryOverlay from "@/components/TrajectoryOverlay";
 import {
   type Delivery,
   type ResultDocument,
@@ -111,16 +115,35 @@ const Results = () => {
   const deliveries: Delivery[] | null = envelope?.deliveries ?? null;
   const flat = useMemo(() => adaptDeliveries(deliveries ?? []), [deliveries]);
 
-  /** The clip shown: prefer a delivery the pitch model calibrated. */
-  const featured = useMemo(() => {
+  /**
+   * The clip shown is a SELECTED delivery, navigable with Previous/Next.
+   *
+   * The initial selection prefers a delivery the pitch model calibrated — the
+   * one most likely to have full metrics — then the first with a clip, then
+   * the first overall. A delivery list that changes (a new analysis loads)
+   * resets the selection to that same preference rather than leaving an index
+   * that may now point at nothing.
+   */
+  const initialIndex = useMemo(() => {
     const list = deliveries ?? [];
-    return (
-      list.find((d) => d?.pitch?.calibrated) ??
-      list.find((d) => Boolean(d?.video?.clip_url)) ??
-      list[0] ??
-      null
-    );
+    const calibrated = list.findIndex((d) => d?.pitch?.calibrated);
+    if (calibrated >= 0) return calibrated;
+    const withClip = list.findIndex((d) => Boolean(d?.video?.clip_url));
+    return withClip >= 0 ? withClip : 0;
   }, [deliveries]);
+
+  const [selected, setSelected] = useState(initialIndex);
+  useEffect(() => {
+    setSelected(initialIndex);
+  }, [initialIndex]);
+
+  const clamp = (i: number, list: Delivery[]) =>
+    Math.max(0, Math.min(i, list.length - 1));
+
+  const deliveryList = deliveries ?? [];
+  const featured = deliveryList[selected] ?? deliveryList[initialIndex] ?? null;
+  const hasPrev = selected > 0;
+  const hasNext = selected < deliveryList.length - 1;
 
   const videoUrl = mediaUrl(featured?.video?.clip_url);
   const videoW = featured?.video?.width ?? null;
@@ -243,9 +266,38 @@ const Results = () => {
 
         {/* ── 3. VIDEO PLAYER (full width) ── */}
         <section>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-4">
-            Tracked <span className="text-gradient">Video</span>
-          </h2>
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Tracked <span className="text-gradient">Video</span>
+            </h2>
+            {/* Previous/Next: each swaps the player, overlays and caption for
+                the neighbouring delivery WHOLE — same envelope, one index. */}
+            {deliveryList.length > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasPrev}
+                  onClick={() => setSelected((i) => clamp(i - 1, deliveryList))}
+                  data-testid="prev-delivery"
+                >
+                  <ChevronLeft className="h-4 w-4" /> Previous
+                </Button>
+                <span className="text-sm text-muted-foreground font-mono tabular-nums">
+                  {selected + 1} / {deliveryList.length}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasNext}
+                  onClick={() => setSelected((i) => clamp(i + 1, deliveryList))}
+                  data-testid="next-delivery"
+                >
+                  Next <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
           <div className="relative rounded-3xl overflow-hidden border border-border shadow-elegant gradient-card">
             <div
               className="bg-black relative w-full"
@@ -266,12 +318,62 @@ const Results = () => {
                   ● TRACKING ON
                 </span>
               </div>
+              <TrajectoryOverlay
+                points={featured?.trajectory?.points}
+                bounceFrame={featured?.bounce?.frame}
+                width={videoW}
+                height={videoH}
+              />
               <PitchOverlay
                 pitch={featured?.pitch}
                 width={videoW}
                 height={videoH}
               />
             </div>
+            {/* The selected delivery's own metrics, read from the same
+                envelope the cards below use — one source, two views. */}
+            {featured && (
+              <div
+                className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 border-t border-border bg-background/60 backdrop-blur text-sm"
+                data-testid="delivery-caption"
+              >
+                <span className="font-bold">Ball {featured.id}</span>
+                <span className="text-muted-foreground">
+                  Speed{" "}
+                  <span className="font-semibold text-foreground">
+                    {typeof featured.bowling?.speed_kmh === "number"
+                      ? `${featured.bowling.speed_kmh.toFixed(1)} km/h`
+                      : "—"}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Length{" "}
+                  <span className="font-semibold text-foreground">
+                    {featured.bowling?.length ?? "—"}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Line{" "}
+                  <span className="font-semibold text-foreground">
+                    {featured.bowling?.line ?? "—"}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Shot{" "}
+                  <span className="font-semibold text-foreground">
+                    {featured.shot?.classification ?? "—"}
+                  </span>
+                </span>
+                {/* The gate's recorded refusal, when it refused: the reason
+                    metrics may be missing is a fact on the record, so it is
+                    shown rather than left as unexplained dashes. */}
+                {!featured.pitch?.calibrated && featured.pitch?.geometry_reason && (
+                  <span className="text-xs text-amber-500 ml-auto">
+                    metrics unavailable: {featured.pitch.geometry_reason.replace(/_/g, " ")}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </section>
 

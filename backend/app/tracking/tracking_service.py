@@ -51,7 +51,7 @@ from typing import Callable, Optional
 import cv2
 import numpy as np
 
-from ..core.config import PITCH_BOX_CONFIG, PipelineConfig, Paths
+from ..core.config import PITCH_BOX_CONFIG, PITCH_SEG_CONFIG, PipelineConfig, Paths
 from ..core.constants import (
     PITCH_CORRIDOR,
     PITCH_EVENT_GUARD_FRAMES,
@@ -79,6 +79,13 @@ from ..pitch.local_box_detector import (
     LocalPitchBoxDetector,
     PitchBoxSlot,
     describe_pitch_box,
+)
+from ..pitch.segmentation_detector import (
+    LocalPitchSegDetector,
+    build_pitch_seg_summary,
+    describe_pitch_seg,
+    pitch_seg_enabled,
+    seg_pitch_config,
 )
 from ..segmentation.purity_validator import (
     ClipValidator,
@@ -264,6 +271,14 @@ class TrackingResult:
     # The boxes themselves are stored per delivery, under
     # `delivery.pitch.box_estimate`, as APPROXIMATE corners only.
     pitch_box_summary: Optional[dict] = None
+    # How the OPTIONAL LOCAL pitch-SEGMENTATION detector ran: frames sampled,
+    # masks accepted/rejected (with reasons), latency, and the explicit
+    # statement that this source may not become metric geometry. Null
+    # whenever the feature was OFF, in which case the key is omitted from
+    # tracking.json entirely. The mask quads themselves live in
+    # `delivery.pitch` as the calibration when the seg detector is the pitch
+    # detection source.
+    pitch_seg_summary: Optional[dict] = None
 
     def time_stage(self, name: str, seconds: float) -> None:
         self.stage_seconds[name] = (
@@ -371,6 +386,10 @@ class TrackingResult:
         # feature existed.
         if self.pitch_box_summary is not None:
             document["pitch_box_detection"] = self.pitch_box_summary
+        # Same rule for the local pitch-SEGMENTATION detector: present only
+        # when it actually ran.
+        if self.pitch_seg_summary is not None:
+            document["pitch_seg_detection"] = self.pitch_seg_summary
         return document
 
 
@@ -388,6 +407,7 @@ class TrackingService:
         *,
         pitch_service: Optional[PitchService] = None,
         pitch_box_detector=None,
+        pitch_seg_detector=None,
     ) -> None:
         self.config = config or PipelineConfig()
         # Injected so a test can drive the pitch state machine without a
@@ -399,6 +419,12 @@ class TrackingService:
         # `backend/models/pitch_detect.pt` is the default — and only skips it
         # when the environment says `off`.
         self._pitch_box_detector = pitch_box_detector
+        # Injected so a test can drive the local pitch-SEGMENTATION detector
+        # with a fixed mask. Left alone, `_run` builds one whenever
+        # CRICKET_PITCH_SEG_MODEL names a weights file — the shipped
+        # `backend/models/pitch_seg_yolo11s.pt` is the default — and only
+        # skips it when the environment says `off`.
+        self._pitch_seg_detector = pitch_seg_detector
 
     # ── Public API ───────────────────────────────────────────────────────────
     def analyse(
@@ -474,21 +500,60 @@ class TrackingService:
         )
         tracker = BallTracker()
 
-        # The ABANDONED remote pitch-keypoint service. One object for the whole
-        # pass, so its calibration history would be continuous across
-        # deliveries. It is inert unless the environment both supplies a
-        # ROBOFLOW_API_KEY and opts back in with CRICKET_ROBOFLOW_PITCH: with
-        # neither — the default — `on_frame` returns on the first check, no
-        # request is made, and every snapshot honestly reports
-        # `no_calibration`. The local pitch-BOX detector below is the pitch
-        # detection source.
-        pitch = (
-            self._pitch_service
-            if self._pitch_service is not None
-            else PitchService(width=width, height=height)
-        )
+        # ── LOCAL pitch-SEGMENTATION detection — the MASK model ─────────────
+        # A local YOLO11s-seg that answers with a mask over the complete
+        # wicket-to-wicket pitch; the mask boundary becomes four corners
+        # (pitch/mask_geometry.py) and those become the calibration the pitch
+        # block draws. It is a DETECTION of where the pitch is. `analytics/
+        # pitch_geometry.py` admits it as a metric source when its geometry
+        # passes the per-delivery checks (aspect agrees with the ball's
+        # travel, homography finite, corners map inside the pitch); when those
+        # checks fail the delivery keeps null measurements and the reason is
+        # recorded, so no number is ever fabricated from a bad quad. ON
+        # whenever CRICKET_PITCH_SEG_MODEL names a weights file (the shipped
+        # backend/models/pitch_seg_yolo11s.pt is the default) or a detector
+        # was injected by a test; `off` turns it off, and then nothing below
+        # exists and the output is identical to a build that never had this
+        # feature. The inference runs on PitchService's own worker thread, so
+        # the loop pays one non-blocking put per interval.
+        seg_cfg = PITCH_SEG_CONFIG
+        seg_detector = self._pitch_seg_detector
+        pitch = self._pitch_service
+        if pitch is None:
+            if seg_detector is not None:
+                log.info("pitch segmentation detector: ON (injected by caller)")
+            elif pitch_seg_enabled(seg_cfg):
+                log.info("%s", describe_pitch_seg(seg_cfg))
+            if seg_detector is None and pitch_seg_enabled(seg_cfg):
+                seg_path = seg_cfg.model_path
+                if seg_path is not None and seg_path.is_file():
+                    seg_detector = LocalPitchSegDetector.from_config(seg_cfg)
+                else:
+                    # Configured but missing: the analysis runs exactly as it
+                    # would have without the feature, and says so loudly
+                    # rather than pretending the detector ran.
+                    log.error(
+                        "pitch segmentation configured but weights not found at %s; "
+                        "continuing without it", seg_path,
+                    )
+            if seg_detector is not None:
+                pitch = PitchService(
+                    cfg=seg_pitch_config(seg_cfg), width=width, height=height,
+                    detector=seg_detector,
+                )
+            else:
+                pitch = PitchService(width=width, height=height)
 
-        # ── LOCAL pitch-BOX detection — the pitch detection source ───────────
+        # The pitch service above is either the segmentation-backed one (mask
+        # detector injected or configured) or the bare one. The bare one wraps
+        # the ABANDONED remote pitch-keypoint path: inert unless the
+        # environment both supplies a ROBOFLOW_API_KEY and opts back in with
+        # CRICKET_ROBOFLOW_PITCH — with neither, the default, `on_frame`
+        # returns on the first check, no request is made, and every snapshot
+        # honestly reports `no_calibration`. The local pitch-BOX detector
+        # below is the APPROXIMATE-corner path that runs alongside either.
+
+        # ── LOCAL pitch-BOX detection — approximate corners ──────────────────
         # A local YOLO model that answers with a BOX around the pitch, turned
         # into four APPROXIMATE corners. ON whenever CRICKET_PITCH_BOX_MODEL
         # names a weights file (the shipped backend/models/pitch_detect.pt is
@@ -937,6 +1002,7 @@ class TrackingService:
                     "travel_delta": round(pitch_geom.travel_delta, 4),
                     "calibration_frame": pitch_geom.calibration_frame,
                 }
+                pitch_block["geometry_reason"] = None
             else:
                 key = pitch_geom_reason or "unavailable"
                 pitch_geom_stats["rejections"][key] = (
@@ -944,6 +1010,12 @@ class TrackingService:
                 )
                 pitch_block["orientation"] = None
                 pitch_block["map_homography"] = None
+                # WHY the geometry gate refused, on the delivery itself: a
+                # client explaining "no length available" can name the fact
+                # (cropped by the overlay, square quad, ambiguous travel…)
+                # instead of guessing. Null on every delivery the gate accepted,
+                # so the block keeps one shape whatever happened.
+                pitch_block["geometry_reason"] = pitch_geom_reason
 
             result.deliveries.append(delivery)
             if delivery.bowling.speed_kmh is not None and not delivery.bowling.speed_imputed:
@@ -1057,6 +1129,11 @@ class TrackingService:
                 near_event=near_event,
                 scene_cut=is_scene_cut,
                 black=is_black,
+                # The loop's own frame-difference energy. The service uses it
+                # (with `scene_cut`) to invalidate quads measured before a
+                # camera move near a cut: the quad described the previous
+                # shot, and the next delivery must not inherit it.
+                motion=motion_energy,
             )
 
             # 2c. LOCAL pitch-BOX detection. Offered on every Nth frame; the
@@ -1329,6 +1406,18 @@ class TrackingService:
             box_slot.stop()
             result.pitch_box_summary = box_slot.summary()
             log.info("Pitch box detector summary: %s", result.pitch_box_summary)
+        # The segmentation detector's own record, built from the service's
+        # filing plus the detector's tally. Only when it actually ran: with
+        # the feature OFF nothing is attached and the document stays
+        # byte-identical to one produced before this feature existed.
+        if seg_detector is not None:
+            result.pitch_seg_summary = build_pitch_seg_summary(
+                seg_detector, result.pitch_summary or {}
+            )
+            log.info(
+                "Pitch segmentation summary: %s",
+                {k: v for k, v in result.pitch_seg_summary.items() if k != "service"},
+            )
         # Closed, not deleted, and queued like every other candidate so it gets
         # the same merge opportunity. If it holds too few confirmed detections to
         # be a delivery, `emit_event` records why and drops it.

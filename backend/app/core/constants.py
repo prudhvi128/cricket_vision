@@ -155,6 +155,29 @@ LENGTH_ZONES_M = [
 # guessing would swap the length and width scales.
 PITCH_GEOMETRY_ASPECT_MIN_RATIO = 1.2
 
+# How far the ball's image-space travel may depart from the quad's own long
+# axis, in degrees (undirected: 90° is perpendicular). The unit-square axis
+# vote already says which way the ball travelled INSIDE the quad; this says the
+# quad itself is elongated the same way IN THE IMAGE, so a horizontally
+# elongated quad cannot claim a vertically travelling ball. Broadcast footage
+# foreshortens the pitch and the ball drops as it travels, so the image path is
+# never perfectly parallel to the projected pitch axis: the tolerance is wide
+# enough for that and still refuses a sideways quad.
+PITCH_GEOMETRY_TRAVEL_AXIS_MAX_DEG = 40.0
+
+# Share of the frame height, measured from the bottom edge, that is treated as
+# the broadcast scorecard band. The overlay occupies the bottom ~100 px of the
+# 720p footage and the pitch model cannot segment through it, so a quad whose
+# bottom edge sits in that band has run out of visible pitch: it is only PART
+# of the wicket-to-wicket rectangle and must never be stretched to 20.12 m.
+# Refused with its own reason (pitch_cropped_by_overlay) instead of being
+# mislabelled as an aspect mismatch. 0.15 * 720 = 108 px.
+PITCH_GEOMETRY_CROP_BAND_FRACTION = 0.15
+
+# The distinct refusal reason for the crop above, stated once so the gate, the
+# per-delivery record and the run report use the same words.
+PITCH_GEOMETRY_CROPPED_REASON = "pitch_cropped_by_overlay"
+
 # How far the ball must travel ALONG the chosen axis, in unit-square units,
 # before its direction of travel is believed. This is what decides which end of
 # the quad the batter stands at; a ball whose detections barely move cannot say.
@@ -211,6 +234,7 @@ SHOT_MODEL_PROVENANCE_NAME = "cricket_model_transformer"
 # change that never happened. See `STAGE_PROGRESS_BANDS` for how progress is
 # derived without faking a phase boundary.
 PIPELINE_STAGES = (
+    "queued",
     "uploading",
     "tracking",
     "validation",
@@ -524,6 +548,17 @@ PITCH_MAX_LOST_FRAMES = 50
 # frame to frame.
 PITCH_SMOOTHING_ALPHA = 0.4
 
+# Centroid-displacement gate for the EMA smoother, as a fraction of the frame
+# DIAGONAL. A detection whose keypoint centroid has moved further than this
+# since the smoothed state was measured describes a DIFFERENT view (a camera
+# pan, a cut the scene-change detector missed) — blending it with the old quad
+# produces a ghost that is neither view and is systematically smaller, which
+# is exactly what squashed the stored quads on the Oct-11 replay. Such a
+# detection REPLACES the smoothed state instead of blending with it; ordinary
+# jitter (a few pixels) stays far below this and keeps its smoothing. 0.06 of
+# a 1280x720 frame's diagonal is ~88 px. A value <= 0 disables the gate.
+PITCH_SMOOTHING_MAX_CENTROID_SHIFT = 0.06
+
 # Longest a single Roboflow call may run before it is recorded as a failure.
 # Requests are made on a background thread, so a slow call never stalls the
 # tracking loop — this only bounds how long the state machine waits before
@@ -640,3 +675,84 @@ PITCH_BOX_IMGSZ_DEFAULT = 640
 # one of the sampled answers cleared 116. Below this the corridor is a crowd,
 # a graphic or a night shot, and an attempt is worth half as often, not never.
 PITCH_CORRIDOR_MIN_LUMINANCE = 115.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LOCAL PITCH SEGMENTATION (ultralytics YOLO11s-seg, local weights)
+# ═══════════════════════════════════════════════════════════════════════════
+# The segmentation model: a local YOLO11s-seg that answers with a MASK over
+# the complete wicket-to-wicket pitch rather than with a box or keypoints.
+# The mask boundary is simplified to a four-corner quad (see
+# app/pitch/mask_geometry.py). Those corners describe the MASK, not a
+# measurement of the ground: they never feed a metre-scale geometry
+# (app/analytics/pitch_geometry.py refuses any source other than
+# `pitch_keypoints`), and can never make an analysis `geometry_calibrated`.
+#
+# The shipped weights ARE the detection source, so the feature is ON by
+# default. `CRICKET_PITCH_SEG_MODEL` may name a different weights file (a
+# bare filename resolves against backend/models/; the file is never copied
+# or renamed) or one of PITCH_SEG_OFF_TOKENS to run without it.
+PITCH_SEG_DEFAULT_WEIGHTS = "pitch_seg_yolo11s.pt"
+# Same off-tokens as the box detector: "off", "none", "disabled", "0",
+# "false". The test suite sets CRICKET_PITCH_SEG_MODEL=off so the feature is
+# inert under test (see backend/conftest.py).
+PITCH_SEG_OFF_TOKENS = PITCH_BOX_OFF_TOKENS
+PITCH_SEG_CONF_DEFAULT = 0.5
+PITCH_SEG_EVERY_N_DEFAULT = 5
+PITCH_SEG_IMGSZ_DEFAULT = 640
+# Sampling mode default: `interval` — one frame every `every_n` frames,
+# whatever the scene. `adaptive` and `sequential` are available and behave
+# exactly as they do for the keypoint service (see PitchService._gate).
+PITCH_SEG_SAMPLING_MODE_DEFAULT = PITCH_SAMPLING_MODE_DEFAULT
+
+# ── Mask validation ──────────────────────────────────────────────────────
+# Share of the frame a mask may cover. Measured over real_cricket.mp4: real
+# pitch masks land at 0.09–0.15 at 1280x720; a crowd false positive at
+# conf=0.499 covered 0.378, and a partial pitch mask 0.33. The floor is
+# below the smallest plausible pitch quad so a distant camera is not refused.
+PITCH_SEG_MIN_AREA_FRACTION = 0.01
+PITCH_SEG_MAX_AREA_FRACTION = 0.25
+# Aspect ratio (min-area rect) bounds. Real pitch masks span 1.08–2.38 at
+# 1280x720 — near-square when the camera is elevated, elongated when side-on
+# — so the floor is 1.0 and the ceiling is loose enough for any framing.
+PITCH_SEG_MIN_ASPECT_RATIO = 1.0
+PITCH_SEG_MAX_ASPECT_RATIO = 6.0
+# Convex-hull → 4-corner simplification, tried in this order (see
+# mask_geometry.quad_from_mask): approxPolyDP at each fraction until exactly
+# four corners come out, then a greedy smallest-chord reduction.
+PITCH_SEG_APPROX_POLYDP_FRACS = (0.02, 0.03, 0.05, 0.08)
+
+# ── Estimate guards ──────────────────────────────────────────────────────
+# Confidence-regression tolerance. A new calibration is refused while the
+# current one is still fresh AND its confidence exceeds the new one by more
+# than this: a 0.91 quad must not be replaced by a 0.55 quad just because
+# the latter arrived later.
+PITCH_SEG_CONFIDENCE_TOLERANCE = 0.15
+# A scene cut or strong camera motion (motion_energy above this multiple of
+# SCENE_CUT_DIFF_THRESHOLD) invalidates every calibration measured BEFORE it:
+# the quad described the previous shot. 0.8 of the cut threshold so a camera
+# pan that is nearly a cut is treated as one for calibration purposes.
+PITCH_MOTION_INVALIDATE_MULTIPLIER = 0.8
+# Bounded list of frames on which a scene change was noted. A nine-minute
+# video produces a few dozen cuts; the cap is a backstop against a video of
+# nothing but cuts.
+PITCH_SCENE_CUT_HISTORY_CAP = 256
+# Frames within which the last accepted estimate still biases WHICH valid
+# candidate is chosen when several are present (tie-break on centre
+# distance). Beyond this window the previous view is not evidence about the
+# current one.
+PITCH_SEG_CONSISTENCY_WINDOW = 150
+# Two candidate confidences within this band are a TIE, and consistency with
+# the previous accepted estimate decides; outside it confidence wins outright.
+PITCH_SEG_CONF_TIE_BAND = 0.05
+
+# How a detection reached the calibration: the source vocabulary. Only
+# `pitch_keypoints` is allowed to become metric geometry (speed, length,
+# line); `pitch_segmentation` describes the pitch but never measures it.
+PITCH_DETECTION_SOURCE_KEYPOINTS = "pitch_keypoints"
+PITCH_DETECTION_SOURCE_SEGMENTATION = "pitch_segmentation"
+# The rejection reason recorded when a calibration's source is not allowed to
+# become metric geometry (analytics/pitch_geometry.py), stated once so the
+# analysis record, the run report and the segmentation summary all use the
+# same words for the same refusal.
+PITCH_GEOMETRY_NON_METRIC_SOURCE = "segmentation_estimate_is_not_metric_geometry"

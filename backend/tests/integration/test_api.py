@@ -187,5 +187,50 @@ class TestPersistedDocument(unittest.TestCase):
             )
 
 
+class TestRejectedUploadDoesNotLeakAJob(unittest.TestCase):
+    """
+    A rejected upload must not leave a permanent `queued` job behind.
+
+    The upload path creates the job before the content is validated (the id has
+    to exist for progress reporting during the write). Before the fix, every
+    rejection path removed the analysis directory but not the registry entry:
+    the registry grew without bound, /api/health over-counted, and
+    GET /result for that id answered 409 forever instead of 404.
+    """
+
+    def setUp(self):
+        self.client = client_for()
+
+    def _jobs(self):
+        from app.api.deps import get_jobs
+
+        return get_jobs().list()
+
+    def test_empty_upload_is_rejected_without_leaving_a_job(self):
+        r = self.client.post(
+            "/api/analyze", files={"video": ("bad.mp4", b"", "video/mp4")}
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(self._jobs(), [])
+
+    def test_unsupported_extension_is_rejected_without_creating_a_job(self):
+        r = self.client.post(
+            "/api/analyze", files={"video": ("bad.exe", b"not a video", "application/octet-stream")}
+        )
+        self.assertEqual(r.status_code, 400)
+        # The extension is checked before the job is created, so nothing leaks.
+        self.assertEqual(self._jobs(), [])
+
+    def test_result_of_a_rejected_upload_is_404_not_409(self):
+        """A discarded job must not be mistaken for one still running."""
+        r = self.client.post(
+            "/api/analyze", files={"video": ("bad.mp4", b"", "video/mp4")}
+        )
+        self.assertEqual(r.status_code, 400)
+        # The client never learned an id; any id now answers 404.
+        rr = self.client.get("/api/analysis/any-id/result")
+        self.assertEqual(rr.status_code, 404)
+
+
 if __name__ == "__main__":
     unittest.main()

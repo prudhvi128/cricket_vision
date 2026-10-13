@@ -6,7 +6,7 @@ network, no video, no API key. What they pin down:
 
   * with no credential and no injected detector the service is inert - no
     submissions, no worker thread, and every snapshot still answers with the
-    honest `no_calibration` block (all thirteen keys, nothing invented);
+    honest `no_calibration` block (all fourteen keys, nothing invented);
   * an injected detector works WITHOUT a credential, because it is an explicit
     choice by the caller;
   * the interval gate submits one frame per `interval_frames` and nothing else;
@@ -60,6 +60,7 @@ EMPTY_BLOCK_KEYS = {
     "image_size",
     "frame_number",
     "model_id",
+    "source",
 }
 
 

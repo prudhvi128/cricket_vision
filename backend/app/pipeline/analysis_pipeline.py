@@ -161,6 +161,11 @@ class PipelineResult:
         # before the feature existed. Configuration and counts only.
         if self.tracking and self.tracking.pitch_box_summary is not None:
             document["pitch_box_detection"] = self.tracking.pitch_box_summary
+        # Same rule for the OPTIONAL local pitch-SEGMENTATION detector: the
+        # mask tally, the service's filing, and the explicit statement that
+        # this source may not become metric geometry. Present only when it ran.
+        if self.tracking and self.tracking.pitch_seg_summary is not None:
+            document["pitch_seg_detection"] = self.tracking.pitch_seg_summary
         return document
 
 

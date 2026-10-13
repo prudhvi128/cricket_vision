@@ -258,6 +258,13 @@ class PitchOut(_FrontendModel):
     is empty when fewer than four keypoints survived validation, because three
     keypoints cannot describe a rectangle and the fourth corner must never be
     invented. `confidence` is the model's own, not a derived number.
+
+    `source` names the detector that measured the quad (`pitch_keypoints` or
+    `pitch_segmentation`) — provenance for a client showing where the drawn
+    pitch came from. `geometry_reason` is set only when the metric geometry
+    gate refused this delivery (null when geometry exists): it is the recorded
+    fact behind null measurements, so "why is there no length" is answerable
+    from the payload itself rather than from a log.
     """
 
     state: str = "no_calibration"
@@ -270,6 +277,8 @@ class PitchOut(_FrontendModel):
     center: Optional[list[float]] = None
     homography_available: bool = False
     orientation: Optional[PitchOrientationOut] = None
+    source: Optional[str] = None
+    geometry_reason: Optional[str] = None
 
 
 class DeliveryOut(_FrontendModel):
@@ -476,6 +485,12 @@ def _pitch(delivery: dict) -> PitchOut:
             if orientation is not None and orientation.get("axis") is not None
             else None
         ),
+        # Provenance and refusal, when present: `source` is which detector
+        # measured the quad; `geometry_reason` is why the metric gate refused
+        # (null when geometry exists, so a client showing a length can hide
+        # the field and one explaining a missing length can name the fact).
+        source=(str(p["source"]) if p.get("source") else None),
+        geometry_reason=(str(p["geometry_reason"]) if p.get("geometry_reason") else None),
     )
 
 

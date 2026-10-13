@@ -62,6 +62,7 @@ Two spacing modes (see `PITCH_SAMPLING_MODE`):
 
 from __future__ import annotations
 
+import bisect
 import logging
 import queue
 import threading
@@ -79,10 +80,15 @@ from ..core.constants import (
     PITCH_DROUGHT_BACKOFF,
     PITCH_DROUGHT_INTERVAL_MULTIPLIER,
     PITCH_DROUGHT_INTERVAL_MULTIPLIER_IN_EVENT,
+    PITCH_DETECTION_SOURCE_KEYPOINTS,
     PITCH_FORCE_INTERVAL_MULTIPLIER,
     PITCH_IDLE_INTERVAL_MULTIPLIER,
+    PITCH_MOTION_INVALIDATE_MULTIPLIER,
     PITCH_SAMPLING_MODE_ADAPTIVE,
     PITCH_SAMPLING_MODE_SEQUENTIAL,
+    PITCH_SEG_CONFIDENCE_TOLERANCE,
+    PITCH_SCENE_CUT_HISTORY_CAP,
+    SCENE_CUT_DIFF_THRESHOLD,
 )
 from .calibration import PitchCalibration, PitchSmoother, build_calibration
 from .detector import (
@@ -153,7 +159,35 @@ class PitchService:
         self._calibrations: list[PitchCalibration] = []
         self._history_cap = max(50, 4 * self.cfg.max_lost_frames)
 
+        # ── Scene changes: the frames on which the view CHANGED ────────────
+        # A quad measured before a cut describes the PREVIOUS shot, and the
+        # next delivery that asks for it would be handed a boundary from a
+        # different camera angle. Frames on which a cut (or a camera motion
+        # near enough to one) was noted are recorded here, sorted, bounded;
+        # `_state_at` and `calibration_for_delivery` then refuse any quad
+        # measured strictly before the last such frame at or before the one
+        # being asked about. A quad measured ON the cut frame describes the
+        # new content and is kept.
+        self._scene_cuts: list[int] = []
+        self._scene_changes = 0
+        # 0.8 of the scene-cut threshold: a camera pan that is nearly a cut
+        # is treated as one for calibration purposes.
+        self._motion_invalidate_threshold = (
+            PITCH_MOTION_INVALIDATE_MULTIPLIER * SCENE_CUT_DIFF_THRESHOLD
+        )
+
         self._smoother = PitchSmoother(self.cfg.smoothing_alpha)
+        # The scene-cut frame the smoother was last reset for. Written by the
+        # worker (`_smooth`) and implicitly by the loop via
+        # `_note_scene_change` -> `PitchSmoother.reset()`; a plain Optional[int]
+        # under the GIL, read in `_smooth` under `self._lock`.
+        self._smoother_reset_at: Optional[int] = None
+        # How many times the EMA state was discarded instead of blended into —
+        # a camera pan/scene change (`_note_scene_change`, `_smooth`) or a
+        # centroid jump past the displacement gate (`_smooth`). Counted so the
+        # diagnostics can say how often the view actually moved under the
+        # smoother, which is what the Oct-11 replay found it never reacted to.
+        self._smoother_resets = 0
 
         self._last_submitted_frame = -10**9
         self._submitted = 0
@@ -228,6 +262,7 @@ class PitchService:
         near_event: Optional[bool] = None,
         scene_cut: bool = False,
         black: bool = False,
+        motion: Optional[float] = None,
     ) -> None:
         """
         Offer one frame to the model. Never blocks, never raises, never waits.
@@ -241,7 +276,15 @@ class PitchService:
         what a response means. `event_open` is a delivery in progress;
         `near_event` is the guard that runs past one, where the clip window
         still shows the pitch.
+
+        `motion` is the loop's frame-difference energy. Together with
+        `scene_cut` it decides when the VIEW changed, which invalidates every
+        quad measured before this frame — see `_note_scene_change`.
         """
+        if scene_cut or (
+            motion is not None and motion >= self._motion_invalidate_threshold
+        ):
+            self._note_scene_change(frame_number)
         if self._detector_error is not None:
             self._maybe_rearm(frame_number)
         if not self.enabled:
@@ -491,6 +534,50 @@ class PitchService:
             if isinstance(item, tuple) and item and len(self._evicted_frames) < self._evicted_cap:
                 self._evicted_frames.append(int(item[0]))
 
+    def _note_scene_change(self, frame_number: int) -> None:
+        """
+        The VIEW changed at this frame: quads measured before it describe the
+        previous shot and must not be served for anything after it.
+
+        Called from the loop thread (inside `on_frame`, which never waits) and
+        deduplicated: a hard cut raises the motion energy for one frame, and a
+        camera following the ball may cross the motion threshold on several
+        consecutive frames — one note per run of them is enough, and the
+        bounded list keeps a pathological all-cuts video from growing it.
+
+        The EMA smoother is also RESET here (the only caller of
+        `PitchSmoother.reset()`): its state is the running average of the
+        PREVIOUS view's quad, and blending it into the first detection of the
+        new view produces a ghost that is neither — systematically smaller,
+        which is what squashed the stored quads on the Oct-11 replay.
+        `calibration_for_delivery` and `_state_at` refuse pre-cut quads, but
+        the smoother predates that check and would still feed averaged
+        pre-cut coordinates into the first post-cut calibration. The reset is
+        cheap and idempotent; the deduplication above keeps it from running
+        once per frame during a long pan.
+        """
+        with self._lock:
+            if frame_number in self._scene_cuts:
+                return
+            bisect.insort(self._scene_cuts, frame_number)
+            if len(self._scene_cuts) > PITCH_SCENE_CUT_HISTORY_CAP:
+                del self._scene_cuts[: len(self._scene_cuts) - PITCH_SCENE_CUT_HISTORY_CAP]
+            self._scene_changes += 1
+            self._smoother_resets += 1
+        self._smoother.reset()
+
+    def _last_cut_at_or_before(self, frame_number: int) -> Optional[int]:
+        """Newest noted scene change at or before this frame, if any.
+        `self._lock` must be held."""
+        index = bisect.bisect_right(self._scene_cuts, frame_number)
+        return self._scene_cuts[index - 1] if index else None
+
+    def _cut_invalidates(self, cal_frame: int, upto: int) -> bool:
+        """Did a scene change land AFTER this calibration and at or before
+        `upto`? `self._lock` must be held."""
+        index = bisect.bisect_right(self._scene_cuts, cal_frame)
+        return index < len(self._scene_cuts) and self._scene_cuts[index] <= upto
+
     # ── reads ─────────────────────────────────────────────────────────────────
     def snapshot(self, frame_number: int) -> dict:
         """
@@ -521,12 +608,16 @@ class PitchService:
              is how a quad detected just before a short delivery is treated.
 
         Never an expired quad: one measured outside the window and older than
-        `max_lost_frames` describes a different view of the pitch.
+        `max_lost_frames` describes a different view of the pitch. Never a
+        quad measured before a scene change inside the window either: the
+        clip may span a cut, and the quad from before it describes the shot
+        that ended there.
         """
         with self._lock:
             in_window = [
                 c for c in self._calibrations
                 if start_frame <= c.frame_number <= end_frame
+                and not self._cut_invalidates(c.frame_number, end_frame)
             ]
             if in_window:
                 return in_window[-1]
@@ -534,6 +625,7 @@ class PitchService:
                 c for c in self._calibrations
                 if c.frame_number <= end_frame
                 and end_frame - c.frame_number <= self._fresh_frames
+                and not self._cut_invalidates(c.frame_number, end_frame)
             ]
             return fresh[-1] if fresh else None
 
@@ -581,6 +673,10 @@ class PitchService:
             "image_size": [int(cal.image_size[0]), int(cal.image_size[1])],
             "frame_number": cal.frame_number,
             "model_id": self.cfg.model_id,
+            # WHICH detector measured this quad: "pitch_keypoints" (the default
+            # keypoint model) or "pitch_segmentation". A client showing pitch
+            # provenance reads this; the geometry gate refuses any other token.
+            "source": getattr(cal, "source", PITCH_DETECTION_SOURCE_KEYPOINTS),
         }
 
     def summary(self) -> dict:
@@ -628,6 +724,17 @@ class PitchService:
             "drought": self._drought,
             # Times a timeout-disabled client was given another chance.
             "detector_rearms": self._rearms,
+            # Frames on which the VIEW changed (a scene cut, or camera motion
+            # near one). Every quad measured strictly before the newest of
+            # them is refused for anything after it.
+            "scene_changes": self._scene_changes,
+            "last_scene_cut_frame": (
+                self._scene_cuts[-1] if self._scene_cuts else None
+            ),
+            # How often the EMA smoother was cleared instead of blended into:
+            # every scene change, plus any detection whose centroid jumped past
+            # the displacement gate (a pan the cut detector did not flag).
+            "smoother_resets": self._smoother_resets,
             "latency_ms": _stats(self._infer_ms),
             "queue_wait_ms": _stats(self._queue_wait_ms),
             "queue": {
@@ -778,6 +885,30 @@ class PitchService:
             self._record_refusal(reason, rec=rec)
             return
 
+        # ── The confidence-regression guard ─────────────────────────────────
+        # A FRESH calibration must not be replaced by a materially WEAKER one
+        # just because the weaker one arrived later. The model answering 0.91
+        # a moment ago and 0.55 now is a sign the new mask is a partial or a
+        # false positive; keeping the fresher of the two is the honest read.
+        # Only while the current one is still fresh (`calibrated`): a stale
+        # quad is not worth defending against anything.
+        prior, prior_state = self._state_at(frame_number)
+        if (
+            prior_state == STATE_CALIBRATED
+            and prior is not None
+            and prior.confidence is not None
+            and calibration.confidence is not None
+            # Rounded so a difference that IS the tolerance (0.9 - 0.75,
+            # which is 0.15000000000000002 in binary floating point) counts
+            # as inside it rather than beyond it.
+            and round(prior.confidence - calibration.confidence, 6)
+            > PITCH_SEG_CONFIDENCE_TOLERANCE
+        ):
+            self._record_refusal(
+                "lower_confidence_than_current_estimate", rec=rec
+            )
+            return
+
         rec["confidence"] = calibration.confidence
         rec["keypoints"] = {
             k: [round(v[0], 2), round(v[1], 2)] for k, v in calibration.keypoints.items()
@@ -799,8 +930,53 @@ class PitchService:
         Temporal smoothing, applied BEFORE validation so a jittery boundary never
         reaches the client. Per-keypoint confidences travel unchanged: averaging
         a confidence is a claim about the model, not about the geometry.
+
+        TWO GUARDS AGAINST BLENDING INCOMPATIBLE QUADS
+        ------------------------------------------------
+        The EMA is only meaningful between two views of the SAME pitch from a
+        STABLE camera. Two situations violate that, and both are handled by
+        REPLACING the smoothed state instead of blending into it:
+
+          * the worker is handed a frame from BEFORE the newest recorded scene
+            change (a queued frame processed late) — its quad describes the
+            previous shot, and the next post-cut detection must not average
+            against it. `self._smoother_reset_at` tracks the cut frame the
+            smoother was last cleared for, so a stale queue item cannot smuggle
+            pre-cut coordinates past the reset `_note_scene_change` performed
+            on the loop thread.
+          * the fresh detection's centroid has jumped further than
+            `cfg.smoothing_max_centroid_shift` of the frame diagonal since the
+            smoothed state was measured — a camera pan the scene-change
+            detector did not flag. Averaging four keypoints from two camera
+            positions produces a quad that is neither, and always smaller,
+            which is why stored quads measured systematically squashed
+            (median oriented aspect 1.12 vs 1.36 fresh, Oct-11 replay).
+
+        Ordinary jitter (a few pixels) stays far below the gate and keeps its
+        smoothing; so does a weak-but-consistent detection, which the
+        confidence-regression guard in `_process` still protects separately.
         """
+        with self._lock:
+            newest_cut = self._scene_cuts[-1] if self._scene_cuts else None
+        if (
+            newest_cut is not None
+            and self._smoother_reset_at != newest_cut
+            and detection.frame_number >= newest_cut
+        ):
+            self._smoother.reset()
+            self._smoother_reset_at = newest_cut
+            with self._lock:
+                self._smoother_resets += 1
+
         named = {k.name: (k.x, k.y) for k in detection.keypoints}
+        if self._centroid_jump_exceeds_gate(detection, named):
+            # The view moved. Replace, don't blend: the next `apply` seeds
+            # from nothing, so the smoothed state becomes THIS quad.
+            self._smoother.reset()
+            self._smoother_reset_at = None
+            with self._lock:
+                self._smoother_resets += 1
+
         smoothed, confidence = self._smoother.apply(named, detection.confidence)
         conf_by_name = {k.name: k.confidence for k in detection.keypoints}
         keypoints = [
@@ -809,11 +985,46 @@ class PitchService:
         ]
         return replace(detection, keypoints=keypoints, confidence=confidence)
 
+    def _centroid_jump_exceeds_gate(
+        self, detection: PitchDetection, named: dict[str, tuple[float, float]]
+    ) -> bool:
+        """
+        Has the centroid moved more than `cfg.smoothing_max_centroid_shift` of
+        the frame diagonal since the smoothed state was measured?
+
+        False when the gate is disabled (<= 0), when the smoother holds nothing
+        yet (first detection — nothing to disagree with), or when either
+        centroid cannot be computed. A detection with no keypoints is a
+        degenerate answer that `build_calibration` will refuse on its own; the
+        gate does not need to double as a validator.
+        """
+        threshold = float(self.cfg.smoothing_max_centroid_shift)
+        if threshold <= 0 or not named:
+            return False
+        prior = self._smoother.last_centroid
+        if prior is None:
+            return False
+        xs = [p[0] for p in named.values()]
+        ys = [p[1] for p in named.values()]
+        current = (sum(xs) / len(xs), sum(ys) / len(ys))
+        diag = (self.width ** 2 + self.height ** 2) ** 0.5
+        if diag <= 0:
+            return False
+        distance = ((current[0] - prior[0]) ** 2 + (current[1] - prior[1]) ** 2) ** 0.5
+        return distance > threshold * diag
+
     # ── state machine ─────────────────────────────────────────────────────────
     def _state_at(self, frame_number: int) -> tuple[Optional[PitchCalibration], str]:
         with self._lock:
+            # A quad measured before the last scene change describes the
+            # PREVIOUS shot: it is refused here rather than served as if it
+            # still described this one. A quad measured on the cut frame
+            # itself describes the new content and is kept.
+            cut = self._last_cut_at_or_before(frame_number)
             usable = [
-                c for c in self._calibrations if c.frame_number <= frame_number
+                c for c in self._calibrations
+                if c.frame_number <= frame_number
+                and (cut is None or c.frame_number >= cut)
             ]
             cal = usable[-1] if usable else None
         if cal is None:
@@ -962,6 +1173,7 @@ def _empty_block(state: str) -> dict:
         "image_size": None,
         "frame_number": None,
         "model_id": None,
+        "source": None,
     }
 
 

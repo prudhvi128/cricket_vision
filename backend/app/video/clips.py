@@ -52,6 +52,7 @@ from ..core.constants import (
     VIDEO_CODEC_PREFERENCE,
 )
 from ..schemas.tracking import ClipFrameMap, ClipMapError
+from .video_io import open_video_writer
 
 log = logging.getLogger(__name__)
 
@@ -107,35 +108,27 @@ class ClipWriter:
     # ── Construction ─────────────────────────────────────────────────────────
     def _open_with_fallback(self, codec_preference: tuple) -> None:
         """
-        Try each FourCC in turn and take the first that actually opens.
+        Try each codec candidate in turn and take the first that actually opens.
 
-        `isOpened()` is the whole point. A VideoWriter that fails to initialise
-        does not raise — it returns an object whose release() discards the file.
-        Without this check the failure is invisible until the tracking pass has
-        already completed.
+        `open_video_writer` prefers the Windows Media Foundation H.264 encoder
+        (clean, browser-playable, no OpenH264 attempt) before the caller's
+        avc1-then-mp4v chain. `isOpened()` is the whole point: a VideoWriter
+        that fails to initialise does not raise — it returns an object whose
+        release() discards the file. Without this check the failure is
+        invisible until the tracking pass has already completed.
         """
-        for codec in codec_preference:
-            try:
-                fourcc = cv2.VideoWriter_fourcc(*codec)
-                candidate = cv2.VideoWriter(
-                    str(self.path), fourcc, self.fps, self.size
-                )
-            except Exception as exc:  # pragma: no cover - platform dependent
-                self.codec_errors.append(f"{codec}: {exc}")
-                continue
-
-            if candidate is not None and candidate.isOpened():
-                self.writer = candidate
-                self.codec_used = codec
-                log.info(
-                    "Clip writer opened: codec=%s fps=%.3f size=%sx%s -> %s",
-                    codec, self.fps, self.size[0], self.size[1], self.path.name,
-                )
-                return
-
-            if candidate is not None:
-                candidate.release()
-            self.codec_errors.append(f"{codec}: isOpened() returned False")
+        writer, label, errors = open_video_writer(
+            self.path, self.fps, self.size, codec_preference
+        )
+        self.codec_errors.extend(errors)
+        if writer is not None:
+            self.writer = writer
+            self.codec_used = label
+            log.info(
+                "Clip writer opened: codec=%s fps=%.3f size=%sx%s -> %s",
+                label, self.fps, self.size[0], self.size[1], self.path.name,
+            )
+            return
 
         raise ClipWriteError(
             f"No usable video codec for {self.path.name}. Tried "

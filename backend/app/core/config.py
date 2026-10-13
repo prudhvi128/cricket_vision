@@ -35,6 +35,8 @@ from .constants import (
     PITCH_BOX_INSET_DEFAULT,
     PITCH_BOX_OFF_TOKENS,
     PITCH_DETECTION_INTERVAL_FRAMES,
+    PITCH_DETECTION_SOURCE_KEYPOINTS,
+    PITCH_DETECTION_SOURCE_SEGMENTATION,
     PITCH_HOMOGRAPHY_MIN_KPS,
     PITCH_MAX_ATTEMPTS_PER_SEC,
     PITCH_MAX_INPUT_SIZE,
@@ -43,10 +45,27 @@ from .constants import (
     PITCH_MIN_CONFIDENCE,
     PITCH_MIN_KEYPOINTS,
     PITCH_MODEL_ID_DEFAULT,
+    PITCH_MOTION_INVALIDATE_MULTIPLIER,
     PITCH_REQUEST_TIMEOUT_SECONDS,
     PITCH_SAMPLING_MODE_DEFAULT,
     PITCH_SAMPLING_MODES,
+    PITCH_SEG_APPROX_POLYDP_FRACS,
+    PITCH_SEG_CONF_DEFAULT,
+    PITCH_SEG_CONF_TIE_BAND,
+    PITCH_SEG_CONFIDENCE_TOLERANCE,
+    PITCH_SEG_CONSISTENCY_WINDOW,
+    PITCH_SEG_DEFAULT_WEIGHTS,
+    PITCH_SEG_EVERY_N_DEFAULT,
+    PITCH_SEG_IMGSZ_DEFAULT,
+    PITCH_SEG_MAX_AREA_FRACTION,
+    PITCH_SEG_MAX_ASPECT_RATIO,
+    PITCH_SEG_MIN_AREA_FRACTION,
+    PITCH_SEG_MIN_ASPECT_RATIO,
+    PITCH_SEG_OFF_TOKENS,
+    PITCH_SEG_SAMPLING_MODE_DEFAULT,
+    PITCH_SCENE_CUT_HISTORY_CAP,
     PITCH_SMOOTHING_ALPHA,
+    PITCH_SMOOTHING_MAX_CENTROID_SHIFT,
     POST_ROLL_SECONDS,
     PRE_ROLL_SECONDS,
     RING_BUFFER_CAPACITY_FRAMES,
@@ -268,6 +287,12 @@ class PitchConfig:
     max_lost_frames: int = PITCH_MAX_LOST_FRAMES
     # EMA weight applied to each accepted keypoint set.
     smoothing_alpha: float = PITCH_SMOOTHING_ALPHA
+    # Centroid-displacement gate, as a fraction of the frame diagonal. A
+    # detection whose centroid jumped further than this since the smoothed
+    # state was measured REPLACES the smoothed state instead of blending with
+    # it (a camera pan or a missed cut is not something to average across).
+    # <= 0 disables the gate; ordinary jitter stays well below it.
+    smoothing_max_centroid_shift: float = PITCH_SMOOTHING_MAX_CENTROID_SHIFT
     # Ceiling on one Roboflow round trip.
     request_timeout_seconds: float = PITCH_REQUEST_TIMEOUT_SECONDS
     # Client-side downsize ceiling, in pixels, before upload.
@@ -316,6 +341,7 @@ class PitchConfig:
             "min_area_fraction": self.min_area_fraction,
             "max_lost_frames": self.max_lost_frames,
             "smoothing_alpha": self.smoothing_alpha,
+            "smoothing_max_centroid_shift": self.smoothing_max_centroid_shift,
             "request_timeout_seconds": self.request_timeout_seconds,
             "max_input_size": self.max_input_size,
             "api_key_configured": bool(self.api_key),
@@ -351,6 +377,9 @@ PITCH_CONFIG = PitchConfig(
     smoothing_alpha=min(1.0, max(0.0, _env_float(
         "PITCH_SMOOTHING_ALPHA", PITCH_SMOOTHING_ALPHA
     ))),
+    smoothing_max_centroid_shift=_env_float(
+        "PITCH_SMOOTHING_MAX_CENTROID_SHIFT", PITCH_SMOOTHING_MAX_CENTROID_SHIFT
+    ),
     request_timeout_seconds=max(
         0.5, _env_float("PITCH_REQUEST_TIMEOUT_SECONDS", PITCH_REQUEST_TIMEOUT_SECONDS)
     ),
@@ -417,6 +446,108 @@ PITCH_BOX_CONFIG = PitchBoxConfig(
     inset=_env_float("CRICKET_PITCH_BOX_INSET", PITCH_BOX_INSET_DEFAULT),
     every_n=max(1, _env_int("CRICKET_PITCH_BOX_EVERY_N", PITCH_BOX_EVERY_N_DEFAULT)),
     imgsz=max(64, _env_int("CRICKET_PITCH_BOX_IMGSZ", PITCH_BOX_IMGSZ_DEFAULT)),
+)
+
+
+@dataclass(frozen=True)
+class PitchSegConfig:
+    """
+    Settings for the local pitch-SEGMENTATION detector (app/pitch).
+
+    The mask model: a local YOLO11s-seg that answers with a polygon over the
+    complete wicket-to-wicket pitch. Environment-resolved ONCE at import,
+    exactly like PitchBoxConfig above. `model` is the whole switch: it names
+    the weights file, and the SHIPPED weights are the default, so a checkout
+    with `backend/models/pitch_seg_yolo11s.pt` runs the detector with no
+    configuration at all. One of `PITCH_SEG_OFF_TOKENS` ("off", "none",
+    "disabled", "0", "false") turns it off, which is what the test suite uses
+    to keep the feature inert under test.
+
+    `model` may be a bare filename ("pitch_seg_yolo11s.pt") — resolved against
+    `MODELS_DIR` — or an absolute path. The weights are used in place: never
+    copied, never renamed, never downloaded.
+
+    Validation bounds (`min_area_fraction` … `max_aspect_ratio`) are the
+    shape-plausibility checks the detector applies to every mask before its
+    quad is offered to the calibration; see core/constants.py for the
+    measurements behind each default.
+    """
+
+    model: str = PITCH_SEG_DEFAULT_WEIGHTS
+    conf: float = PITCH_SEG_CONF_DEFAULT
+    every_n: int = PITCH_SEG_EVERY_N_DEFAULT
+    imgsz: int = PITCH_SEG_IMGSZ_DEFAULT
+    sampling_mode: str = PITCH_SEG_SAMPLING_MODE_DEFAULT
+    min_area_fraction: float = PITCH_SEG_MIN_AREA_FRACTION
+    max_area_fraction: float = PITCH_SEG_MAX_AREA_FRACTION
+    min_aspect_ratio: float = PITCH_SEG_MIN_ASPECT_RATIO
+    max_aspect_ratio: float = PITCH_SEG_MAX_ASPECT_RATIO
+    device: str = ""  # "" = auto: CUDA when available, else CPU
+
+    def __post_init__(self) -> None:
+        # Same forgiveness as PitchConfig: an unrecognised mode resolves to
+        # the documented default rather than taking the analysis down.
+        resolved = str(self.sampling_mode).strip().lower()
+        if resolved not in PITCH_SAMPLING_MODES:
+            resolved = PITCH_SEG_SAMPLING_MODE_DEFAULT
+        if resolved != self.sampling_mode:
+            object.__setattr__(self, "sampling_mode", resolved)
+
+    @property
+    def enabled(self) -> bool:
+        """True unless the environment named no weights or asked for `off`."""
+        token = str(self.model).strip().lower()
+        return bool(token) and token not in PITCH_SEG_OFF_TOKENS
+
+    @property
+    def model_path(self) -> Optional[Path]:
+        """Resolved weights path, or None when the feature is OFF."""
+        if not self.enabled:
+            return None
+        raw = Path(self.model).expanduser()
+        return raw if raw.is_absolute() else (MODELS_DIR / raw)
+
+    def metadata(self) -> dict:
+        """Reproducibility record: configuration only, never a credential."""
+        path = self.model_path
+        return {
+            "enabled": self.enabled,
+            "model": self.model,
+            "model_path": str(path) if path is not None else None,
+            "model_found": bool(path is not None and path.is_file()),
+            "conf": self.conf,
+            "every_n": max(1, self.every_n),
+            "imgsz": self.imgsz,
+            "sampling_mode": self.sampling_mode,
+            "min_area_fraction": self.min_area_fraction,
+            "max_area_fraction": self.max_area_fraction,
+            "min_aspect_ratio": self.min_aspect_ratio,
+            "max_aspect_ratio": self.max_aspect_ratio,
+            "device": self.device or "auto",
+        }
+
+
+PITCH_SEG_CONFIG = PitchSegConfig(
+    model=_env_str("CRICKET_PITCH_SEG_MODEL", PITCH_SEG_DEFAULT_WEIGHTS),
+    conf=_env_float("CRICKET_PITCH_SEG_CONF", PITCH_SEG_CONF_DEFAULT),
+    every_n=max(1, _env_int("CRICKET_PITCH_SEG_EVERY_N", PITCH_SEG_EVERY_N_DEFAULT)),
+    imgsz=max(64, _env_int("CRICKET_PITCH_SEG_IMGSZ", PITCH_SEG_IMGSZ_DEFAULT)),
+    sampling_mode=_env_str(
+        "CRICKET_PITCH_SEG_SAMPLING_MODE", PITCH_SEG_SAMPLING_MODE_DEFAULT
+    ).strip().lower(),
+    min_area_fraction=_env_float(
+        "CRICKET_PITCH_SEG_MIN_AREA", PITCH_SEG_MIN_AREA_FRACTION
+    ),
+    max_area_fraction=_env_float(
+        "CRICKET_PITCH_SEG_MAX_AREA", PITCH_SEG_MAX_AREA_FRACTION
+    ),
+    min_aspect_ratio=_env_float(
+        "CRICKET_PITCH_SEG_MIN_ASPECT", PITCH_SEG_MIN_ASPECT_RATIO
+    ),
+    max_aspect_ratio=_env_float(
+        "CRICKET_PITCH_SEG_MAX_ASPECT", PITCH_SEG_MAX_ASPECT_RATIO
+    ),
+    device=_env_str("CRICKET_PITCH_SEG_DEVICE", ""),
 )
 
 
@@ -849,10 +980,12 @@ __all__ = [
     "MODELS_DIR",
     "PITCH_BOX_CONFIG",
     "PITCH_CONFIG",
+    "PITCH_SEG_CONFIG",
     "PipelineConfig",
     "Paths",
     "PitchBoxConfig",
     "PitchConfig",
+    "PitchSegConfig",
     "PROJECT_DIR",
     "ResolvedSegmentation",
     "RUNS_DIR",

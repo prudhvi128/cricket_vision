@@ -211,6 +211,27 @@ class JobRegistry:
         with self._lock:
             return sorted(self._jobs.values(), key=lambda j: j.created_at, reverse=True)
 
+    def discard(self, analysis_id: str) -> bool:
+        """
+        Forget a job that never started running.
+
+        The upload path creates the job BEFORE the content is validated (the
+        id has to exist for progress reporting during the write), so a rejected
+        upload would otherwise leave a permanent `queued` entry: the registry
+        would grow without bound, `/api/health` would over-count, and
+        `GET /result` for that id would answer 409 forever instead of 404.
+
+        Only a job still `queued` is removed — a running analysis is never
+        discarded from here, because its thread is still writing to disk.
+        """
+        with self._lock:
+            job = self._jobs.get(analysis_id)
+            if job is None or job.status != "queued":
+                return False
+            self._jobs.pop(analysis_id, None)
+            self._threads.pop(analysis_id, None)
+            return True
+
     # ── Progress ─────────────────────────────────────────────────────────────
     def progress_cb(self, analysis_id: str) -> ProgressFn:
         """

@@ -32,6 +32,7 @@ import cv2
 import numpy as np
 
 from ..core.config import PitchConfig
+from ..core.constants import PITCH_DETECTION_SOURCE_KEYPOINTS
 from .detector import Keypoint, PitchDetection
 
 Size = tuple[int, int]
@@ -66,6 +67,13 @@ class PitchCalibration:
     corners: dict[str, tuple[float, float]]
     confidence: Optional[float]
     homography: Optional[np.ndarray] = None
+    # Which detector produced this quad — `pitch_keypoints` (a keypoint model)
+    # or `pitch_segmentation` (a mask-derived quad). The metric-geometry gate
+    # in analytics/pitch_geometry.py reads it: both measured sources may become
+    # a speed, a length or a line, but each delivery's quad must first pass the
+    # per-delivery geometric checks (aspect vs travel, corner-in-bounds,
+    # non-degenerate homography). An unknown source is refused outright.
+    source: str = PITCH_DETECTION_SOURCE_KEYPOINTS
 
     @property
     def width(self) -> float:
@@ -202,6 +210,7 @@ def build_calibration(
             corners=corners,
             confidence=None if confidence is None else round(float(confidence), 4),
             homography=homography,
+            source=getattr(detection, "source", PITCH_DETECTION_SOURCE_KEYPOINTS),
         ),
         "",
     )
@@ -287,12 +296,27 @@ class PitchSmoother:
     trades responsiveness for stability. Points that disappear are forgotten on
     the next step, so a renamed or dropped keypoint cannot drag the average
     toward a coordinate that no longer exists.
+
+    `last_centroid` is the mean of the most recent SMOOTHED keypoints (None
+    before the first `apply`). `PitchService` compares a fresh detection's
+    centroid against it: a jump beyond the configured fraction of the frame
+    diagonal means the camera MOVED, and the service calls `reset()` so the new
+    detection replaces rather than blends with a quad from a different view.
     """
 
     def __init__(self, alpha: float) -> None:
         self.alpha = min(1.0, max(0.0, alpha))
         self._points: dict[str, tuple[float, float]] = {}
         self._confidence: Optional[float] = None
+
+    @property
+    def last_centroid(self) -> Optional[tuple[float, float]]:
+        """Mean of the current smoothed keypoints, or None if nothing is held."""
+        if not self._points:
+            return None
+        xs = [p[0] for p in self._points.values()]
+        ys = [p[1] for p in self._points.values()]
+        return (sum(xs) / len(xs), sum(ys) / len(ys))
 
     def apply(
         self, keypoints: dict[str, tuple[float, float]], confidence: Optional[float]

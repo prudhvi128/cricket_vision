@@ -74,19 +74,23 @@ async def receive_upload(file: UploadFile) -> dict:
                 jobs.progress_cb(job.analysis_id)("uploading", written, 0, "receiving")
     except HTTPException:
         shutil.rmtree(paths.root, ignore_errors=True)
+        jobs.discard(job.analysis_id)
         raise
     except Exception:
         shutil.rmtree(paths.root, ignore_errors=True)
+        jobs.discard(job.analysis_id)
         raise
     finally:
         await file.close()
 
     if written == 0:
         shutil.rmtree(paths.root, ignore_errors=True)
+        jobs.discard(job.analysis_id)
         raise HTTPException(400, "Uploaded file was empty")
 
     if not is_readable_video(dest):
         shutil.rmtree(paths.root, ignore_errors=True)
+        jobs.discard(job.analysis_id)
         raise HTTPException(
             400,
             "The uploaded file could not be opened as a video. It has the right "

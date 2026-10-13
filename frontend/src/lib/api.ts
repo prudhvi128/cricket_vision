@@ -103,6 +103,19 @@ export interface PitchBlock {
   center: number[] | null;
   homography_available: boolean;
   orientation: PitchOrientation | null;
+  /**
+   * Which detector measured the quad (`pitch_keypoints` or
+   * `pitch_segmentation`), or null when no calibration exists. Provenance for
+   * a client showing where the drawn pitch came from.
+   */
+  source?: string | null;
+  /**
+   * Why the metric geometry gate refused THIS delivery, or null when geometry
+   * exists. Set only by the backend's per-delivery gate (cropped by the
+   * scorecard overlay, square quad, ambiguous travel…), so a client explaining
+   * a missing length can name the recorded fact rather than guess.
+   */
+  geometry_reason?: string | null;
 }
 
 export interface TrajectoryPoint {
@@ -324,6 +337,14 @@ export interface FlatDelivery {
    */
   bounce_x?: number;
   bounce_y?: number;
+  /**
+   * True when the metric geometry gate ACCEPTED this delivery's quad. Absent
+   * (falsy) means calibrated metrics — length, line, bounce angle — may be
+   * missing, and `geometry_reason` names why when the backend recorded one.
+   */
+  calibrated?: boolean;
+  /** The gate's recorded refusal, when it refused. Absent when accepted. */
+  geometry_reason?: string;
 }
 
 /**
@@ -370,12 +391,15 @@ function bouncePosition(delivery: Delivery): { x?: number; y?: number } {
   return { x: v, y: towardsBattingEnd ? u : 1 - u };
 }
 
-export function adaptDelivery(delivery: Delivery, index: number): FlatDelivery {
+export function adaptDelivery(delivery: Delivery, _index?: number): FlatDelivery {
   const bowling = delivery.bowling ?? ({} as Delivery["bowling"]);
   const shot = delivery.shot;
   const { x, y } = bouncePosition(delivery);
   return {
-    ball: index + 1,
+    // The backend's stable, non-renumbered delivery id. Quarantined deliveries
+    // are omitted from the served array, so an index-based number would silently
+    // shift every ball after a quarantine and no longer match result.json.
+    ball: delivery.id,
     // The backend serves these already in km/h (`speed_kmh`); the unit is
     // never touched here, and a null comes out as "absent", never as a
     // placeholder label — "Unknown" would read as an answer the run gave.
@@ -389,6 +413,11 @@ export function adaptDelivery(delivery: Delivery, index: number): FlatDelivery {
     bounce_angle: bowling.bounce_angle ?? undefined,
     bounce_x: x,
     bounce_y: y,
+    // Calibration provenance for the card: `calibrated` mirrors the pitch
+    // block's own flag (the geometry gate's verdict), and the refusal reason
+    // is carried through so the card can say WHY a metric is missing.
+    calibrated: Boolean(delivery.pitch?.calibrated),
+    geometry_reason: delivery.pitch?.geometry_reason ?? undefined,
   };
 }
 

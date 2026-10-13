@@ -42,7 +42,9 @@ CREDENTIAL = "TEST_KEY_THAT_MUST_NEVER_PERSIST"
 # The block a client receives - never the matrix, the model id, the source
 # dimensions or the frame it came from. `orientation` IS served: it is what
 # tells a pitch map which end of the quad the batter is at, without which a
-# bounce could be drawn at the wrong end of the pitch.
+# bounce could be drawn at the wrong end of the pitch. `source` (which
+# detector measured the quad) and `geometry_reason` (why the metric gate
+# refused, null when it accepted) are provenance a client may show.
 FRONTEND_PITCH_KEYS = {
     "state",
     "detected",
@@ -54,6 +56,8 @@ FRONTEND_PITCH_KEYS = {
     "center",
     "homography_available",
     "orientation",
+    "source",
+    "geometry_reason",
 }
 INTERNAL_PITCH_KEYS = {"homography", "model_id", "image_size", "frame_number"}
 
